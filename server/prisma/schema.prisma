@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SUPERVISOR
+  EMPLOYEE
+}
+
+enum TaskCategory {
+  CLEANING
+  EQUIPMENT_MAINTENANCE
+  FRONT_DESK
+  CLASSES
+  SAFETY
+  OTHER
+}
+
+enum EodItemType {
+  TEXT
+  CHECKBOX
+  NUMBER
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_COMPLETED
+  EOD_SUBMITTED
+  EOD_REMINDER
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  role         Role     @default(EMPLOYEE)
+  supervisorId String?  @map("supervisor_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  supervisor   User?  @relation("TeamHierarchy", fields: [supervisorId], references: [id])
+  subordinates User[] @relation("TeamHierarchy")
+
+  assignedTasks    Task[] @relation("TaskAssignee")
+  createdTasks     Task[] @relation("TaskCreator")
+  eodSubmissions   EodSubmission[]
+  createdTemplates EodTemplate[]
+  notifications    Notification[]
+
+  @@map("users")
+}
+
+model Task {
+  id           String       @id @default(uuid())
+  title        String
+  description  String?
+  category     TaskCategory @default(OTHER)
+  startDate    DateTime?    @map("start_date")
+  dueDate      DateTime?    @map("due_date")
+  isCompleted  Boolean      @default(false) @map("is_completed")
+  completedAt  DateTime?    @map("completed_at")
+  notes        String?
+  assignedToId String       @map("assigned_to_id")
+  createdById  String       @map("created_by_id")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  assignedTo User @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  createdBy  User @relation("TaskCreator", fields: [createdById], references: [id])
+
+  @@map("tasks")
+}
+
+model EodTemplate {
+  id          String   @id @default(uuid())
+  title       String
+  createdById String   @map("created_by_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy   User              @relation(fields: [createdById], references: [id])
+  items       EodTemplateItem[]
+  submissions EodSubmission[]
+
+  @@map("eod_templates")
+}
+
+model EodTemplateItem {
+  id         String      @id @default(uuid())
+  templateId String      @map("template_id")
+  question   String
+  sortOrder  Int         @default(0) @map("sort_order")
+  type       EodItemType @default(TEXT)
+
+  template  EodTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  responses EodResponse[]
+
+  @@map("eod_template_items")
+}
+
+model EodSubmission {
+  id          String    @id @default(uuid())
+  templateId  String    @map("template_id")
+  employeeId  String    @map("employee_id")
+  date        DateTime  @db.Date
+  submittedAt DateTime? @map("submitted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  template  EodTemplate   @relation(fields: [templateId], references: [id])
+  employee  User          @relation(fields: [employeeId], references: [id])
+  responses EodResponse[]
+
+  @@unique([templateId, employeeId, date])
+  @@map("eod_submissions")
+}
+
+model EodResponse {
+  id             String   @id @default(uuid())
+  submissionId   String   @map("submission_id")
+  templateItemId String   @map("template_item_id")
+  response       String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  submission   EodSubmission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  templateItem EodTemplateItem @relation(fields: [templateItemId], references: [id])
+
+  @@map("eod_responses")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false) @map("is_read")
+  relatedId String?          @map("related_id")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}

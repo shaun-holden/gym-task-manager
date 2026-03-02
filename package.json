@@ -1,0 +1,11 @@
+{
+  "name": "gym-task-manager",
+  "version": "1.0.0",
+  "description": "Internal task management app for gymnastics gym",
+  "scripts": {
+    "build": "cd client && npm install && npm run build && cd ../server && npm install && npx prisma generate",
+    "start": "cd server && npx prisma migrate deploy && node src/server.js",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev"
+  }
+}
