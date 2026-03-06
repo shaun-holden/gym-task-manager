@@ -4,7 +4,7 @@ const generateToken = require('../utils/generateToken');
 
 async function register(req, res, next) {
   try {
-    const { name, email, password, role, supervisorId, organizationName } = req.body;
+    const { name, email, password, role, organizationId: orgId, organizationName } = req.body;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -15,6 +15,7 @@ async function register(req, res, next) {
     const selectedRole = allowedRoles.includes(role) ? role : 'EMPLOYEE';
 
     let organizationId = null;
+    let supervisorId = null;
 
     if (selectedRole === 'SUPERVISOR') {
       // Supervisors create a new organization
@@ -24,15 +25,25 @@ async function register(req, res, next) {
       }
       const org = await prisma.organization.create({ data: { name: orgName } });
       organizationId = org.id;
-    } else if (selectedRole === 'EMPLOYEE' && supervisorId) {
-      // Employees inherit their supervisor's organization
-      const sup = await prisma.user.findUnique({ where: { id: supervisorId }, select: { organizationId: true } });
-      organizationId = sup?.organizationId || null;
+    } else if (selectedRole === 'EMPLOYEE' && orgId) {
+      // Employees join an existing organization
+      const org = await prisma.organization.findUnique({ where: { id: orgId } });
+      if (!org) {
+        return res.status(400).json({ error: 'Organization not found.' });
+      }
+      organizationId = org.id;
+      // Auto-assign to the first supervisor/admin in that org
+      const sup = await prisma.user.findFirst({
+        where: { organizationId: org.id, role: { in: ['SUPERVISOR', 'ADMIN'] } },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      supervisorId = sup?.id || null;
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { name, email, passwordHash, role: selectedRole, supervisorId: selectedRole === 'EMPLOYEE' && supervisorId ? supervisorId : null, organizationId },
+      data: { name, email, passwordHash, role: selectedRole, supervisorId, organizationId },
       select: { id: true, name: true, email: true, role: true, supervisorId: true, organizationId: true },
     });
 

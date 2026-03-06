@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../utils/api';
@@ -9,21 +9,56 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('EMPLOYEE');
-  const [supervisorId, setSupervisorId] = useState('');
-  const [supervisors, setSupervisors] = useState([]);
   const [organizationName, setOrganizationName] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Gym search for employees
+  const [gymQuery, setGymQuery] = useState('');
+  const [gymResults, setGymResults] = useState([]);
+  const [selectedOrg, setSelectedOrg] = useState(null);
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef(null);
+
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  // Search orgs as user types
   useEffect(() => {
-    api.get('/api/auth/supervisors').then((res) => setSupervisors(res.data.supervisors));
+    if (gymQuery.length < 1) {
+      setGymResults([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      api.get('/api/auth/organizations', { params: { q: gymQuery } })
+        .then((res) => {
+          setGymResults(res.data.organizations);
+          setShowResults(true);
+        });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [gymQuery]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowResults(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  function selectOrg(org) {
+    setSelectedOrg(org);
+    setGymQuery(org.name);
+    setShowResults(false);
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (role === 'EMPLOYEE' && !supervisorId) {
-      toast.error('Please select your team / gym');
+    if (role === 'EMPLOYEE' && !selectedOrg) {
+      toast.error('Please search and select your gym');
       return;
     }
     if (role === 'SUPERVISOR' && !organizationName.trim()) {
@@ -32,7 +67,12 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      await register(name, email, password, role, role === 'EMPLOYEE' ? supervisorId : null, role === 'SUPERVISOR' ? organizationName.trim() : null);
+      await register(
+        name, email, password, role,
+        null,
+        role === 'SUPERVISOR' ? organizationName.trim() : null,
+        role === 'EMPLOYEE' ? selectedOrg.id : null,
+      );
       navigate('/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed');
@@ -88,7 +128,7 @@ export default function Register() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setRole('EMPLOYEE')}
+                onClick={() => { setRole('EMPLOYEE'); setSelectedOrg(null); setGymQuery(''); }}
                 className={`flex flex-col items-center gap-1.5 p-4 rounded-lg border-2 transition-all ${
                   role === 'EMPLOYEE'
                     ? 'border-brand-500 bg-brand-50 text-brand-700'
@@ -118,6 +158,7 @@ export default function Register() {
               </button>
             </div>
           </div>
+
           {role === 'SUPERVISOR' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Gym / Organization Name</label>
@@ -130,23 +171,58 @@ export default function Register() {
               />
             </div>
           )}
-          {role === 'EMPLOYEE' && supervisors.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Gym / Team</label>
-              <select
-                value={supervisorId}
-                onChange={(e) => setSupervisorId(e.target.value)}
+
+          {role === 'EMPLOYEE' && (
+            <div className="relative" ref={searchRef}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Find Your Gym</label>
+              <input
+                type="text"
+                value={gymQuery}
+                onChange={(e) => { setGymQuery(e.target.value); setSelectedOrg(null); }}
+                onFocus={() => gymResults.length > 0 && setShowResults(true)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-              >
-                <option value="">Select your gym...</option>
-                {supervisors.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.organization?.name ? `${s.organization.name} — ${s.name}` : s.name}
-                  </option>
-                ))}
-              </select>
+                placeholder="Type your gym name..."
+              />
+              {selectedOrg && (
+                <div className="flex items-center gap-2 mt-2 px-3 py-2 bg-brand-50 border border-brand-200 rounded-lg">
+                  <svg className="w-4 h-4 text-brand-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-sm font-medium text-brand-700">{selectedOrg.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedOrg(null); setGymQuery(''); }}
+                    className="ml-auto text-brand-400 hover:text-brand-600"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              {showResults && gymResults.length > 0 && !selectedOrg && (
+                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {gymResults.map((org) => (
+                    <button
+                      key={org.id}
+                      type="button"
+                      onClick={() => selectOrg(org)}
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-brand-50 hover:text-brand-700 border-b last:border-b-0"
+                    >
+                      {org.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {showResults && gymQuery.length >= 1 && gymResults.length === 0 && (
+                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-4">
+                  <p className="text-sm text-gray-500 text-center">No gyms found matching "{gymQuery}"</p>
+                  <p className="text-xs text-gray-400 text-center mt-1">Ask your employer for the correct gym name</p>
+                </div>
+              )}
             </div>
           )}
+
           <button
             type="submit"
             disabled={loading}

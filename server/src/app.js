@@ -7,6 +7,7 @@ const eodRoutes = require('./routes/eodRoutes');
 const userRoutes = require('./routes/userRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const resourceRoutes = require('./routes/resourceRoutes');
+const organizationRoutes = require('./routes/organizationRoutes');
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.use('/api/eod', eodRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/resources', resourceRoutes);
+app.use('/api/organizations', organizationRoutes);
 
 // Production: serve React client
 if (process.env.NODE_ENV === 'production') {

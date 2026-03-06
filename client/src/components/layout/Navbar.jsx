@@ -37,6 +37,7 @@ export default function Navbar() {
     { to: '/resources', label: 'Resources', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
     { to: '/team', label: 'Team', roles: ['ADMIN', 'SUPERVISOR'] },
     { to: '/admin/users', label: 'Users', roles: ['ADMIN'] },
+    { to: '/admin/organizations', label: 'Orgs', roles: ['ADMIN'] },
   ];
 
   const filteredLinks = navLinks.filter((link) => link.roles.includes(user.role));

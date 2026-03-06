@@ -18,6 +18,7 @@ import EodSubmissions from './pages/eod/EodSubmissions';
 import EodSubmissionDetail from './pages/eod/EodSubmissionDetail';
 import TeamOverview from './pages/team/TeamOverview';
 import UserManagement from './pages/admin/UserManagement';
+import OrganizationManagement from './pages/admin/OrganizationManagement';
 import Notifications from './pages/Notifications';
 import Resources from './pages/Resources';
 
@@ -89,6 +90,9 @@ export default function App() {
           } />
           <Route path="/admin/users" element={
             <ProtectedRoute requiredRoles={['ADMIN']}><UserManagement /></ProtectedRoute>
+          } />
+          <Route path="/admin/organizations" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}><OrganizationManagement /></ProtectedRoute>
           } />
 
           {/* Resources */}

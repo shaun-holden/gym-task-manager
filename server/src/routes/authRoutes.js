@@ -7,14 +7,20 @@ const { register, login, getMe } = require('../controllers/authController');
 
 const router = Router();
 
-// Public: list supervisors for registration
-router.get('/supervisors', async (req, res) => {
-  const supervisors = await prisma.user.findMany({
-    where: { role: { in: ['SUPERVISOR', 'ADMIN'] } },
-    select: { id: true, name: true, organization: { select: { name: true } } },
+// Public: search organizations for registration
+router.get('/organizations', async (req, res) => {
+  const { q } = req.query;
+  const where = {};
+  if (q) {
+    where.name = { contains: q, mode: 'insensitive' };
+  }
+  const organizations = await prisma.organization.findMany({
+    where,
+    select: { id: true, name: true },
     orderBy: { name: 'asc' },
+    take: 10,
   });
-  res.json({ supervisors });
+  res.json({ organizations });
 });
 
 router.post(
