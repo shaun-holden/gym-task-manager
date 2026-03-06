@@ -184,7 +184,7 @@ async function submitEod(req, res, next) {
 
 async function getSubmissions(req, res, next) {
   try {
-    const { date, employeeId, templateId } = req.query;
+    const { date, startDate, endDate, employeeId, templateId } = req.query;
     const where = {};
 
     // Role-based filtering
@@ -210,6 +210,10 @@ async function getSubmissions(req, res, next) {
       const d = new Date(date);
       d.setHours(0, 0, 0, 0);
       where.date = d;
+    } else if (startDate || endDate) {
+      where.date = {};
+      if (startDate) where.date.gte = new Date(startDate);
+      if (endDate) where.date.lte = new Date(endDate);
     }
 
     const submissions = await prisma.eodSubmission.findMany({
@@ -218,7 +222,7 @@ async function getSubmissions(req, res, next) {
         employee: { select: { id: true, name: true } },
         template: { select: { id: true, title: true } },
       },
-      orderBy: { date: 'desc' },
+      orderBy: [{ date: 'desc' }, { submittedAt: 'desc' }],
     });
 
     res.json({ submissions });

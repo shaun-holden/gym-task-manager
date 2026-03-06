@@ -45,6 +45,7 @@ model Organization {
   users         User[]
   tasks         Task[]
   eodTemplates  EodTemplate[]
+  resources     Resource[]
 
   @@map("organizations")
 }
@@ -69,6 +70,7 @@ model User {
   eodSubmissions   EodSubmission[]
   createdTemplates EodTemplate[]
   notifications    Notification[]
+  resources        Resource[]
 
   @@map("users")
 }
@@ -155,6 +157,23 @@ model EodResponse {
   templateItem EodTemplateItem @relation(fields: [templateItemId], references: [id])
 
   @@map("eod_responses")
+}
+
+model Resource {
+  id             String   @id @default(uuid())
+  title          String
+  url            String
+  description    String?
+  category       String?
+  organizationId String?  @map("organization_id")
+  createdById    String   @map("created_by_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  createdBy    User          @relation(fields: [createdById], references: [id])
+
+  @@map("resources")
 }
 
 model Notification {

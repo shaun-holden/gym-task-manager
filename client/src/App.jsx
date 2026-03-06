@@ -19,6 +19,7 @@ import EodSubmissionDetail from './pages/eod/EodSubmissionDetail';
 import TeamOverview from './pages/team/TeamOverview';
 import UserManagement from './pages/admin/UserManagement';
 import Notifications from './pages/Notifications';
+import Resources from './pages/Resources';
 
 function ProtectedRoute({ children, requiredRoles }) {
   const { user, loading } = useAuth();
@@ -88,6 +89,11 @@ export default function App() {
           } />
           <Route path="/admin/users" element={
             <ProtectedRoute requiredRoles={['ADMIN']}><UserManagement /></ProtectedRoute>
+          } />
+
+          {/* Resources */}
+          <Route path="/resources" element={
+            <ProtectedRoute><Resources /></ProtectedRoute>
           } />
 
           {/* Notifications */}

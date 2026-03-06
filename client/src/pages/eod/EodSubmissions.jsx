@@ -12,7 +12,8 @@ export default function EodSubmissions() {
   const [submissions, setSubmissions] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [dateFilter, setDateFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [employeeFilter, setEmployeeFilter] = useState('');
 
   useEffect(() => {
@@ -20,13 +21,14 @@ export default function EodSubmissions() {
     if (user.role !== 'EMPLOYEE') {
       api.get('/api/users').then((res) => setUsers(res.data.users));
     }
-  }, [dateFilter, employeeFilter]);
+  }, [startDate, endDate, employeeFilter]);
 
   async function fetchSubmissions() {
     setLoading(true);
     try {
       const params = {};
-      if (dateFilter) params.date = dateFilter;
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
       if (employeeFilter) params.employeeId = employeeFilter;
 
       const res = await api.get('/api/eod/submissions', { params });
@@ -42,13 +44,25 @@ export default function EodSubmissions() {
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">EOD Submissions</h1>
 
-      <div className="bg-white rounded-xl border p-4 mb-6 flex flex-wrap gap-3">
-        <input
-          type="date"
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
-        />
+      <div className="bg-white rounded-xl border p-4 mb-6 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-gray-500 uppercase">From</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-gray-500 uppercase">To</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+          />
+        </div>
         {user.role !== 'EMPLOYEE' && (
           <select
             value={employeeFilter}
@@ -61,9 +75,9 @@ export default function EodSubmissions() {
             ))}
           </select>
         )}
-        {(dateFilter || employeeFilter) && (
+        {(startDate || endDate || employeeFilter) && (
           <button
-            onClick={() => { setDateFilter(''); setEmployeeFilter(''); }}
+            onClick={() => { setStartDate(''); setEndDate(''); setEmployeeFilter(''); }}
             className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800"
           >
             Clear filters

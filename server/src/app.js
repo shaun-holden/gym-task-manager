@@ -6,6 +6,7 @@ const taskRoutes = require('./routes/taskRoutes');
 const eodRoutes = require('./routes/eodRoutes');
 const userRoutes = require('./routes/userRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const resourceRoutes = require('./routes/resourceRoutes');
 
 const app = express();
 
@@ -33,6 +34,8 @@ app.post('/api/seed', async (req, res) => {
     const tntOrg = await prisma.organization.upsert({ where: { id: 'tnt-gym-org' }, update: {}, create: { id: 'tnt-gym-org', name: 'TNT Gymnastics' } });
     await prisma.user.upsert({ where: { email: 'shaunm78@me.com' }, update: { role: 'ADMIN', organizationId: tntOrg.id }, create: { email: 'shaunm78@me.com', passwordHash: adminHash, name: 'DeShaun Holden', role: 'ADMIN', organizationId: tntOrg.id } });
     await prisma.user.upsert({ where: { email: 'deshaun@tntgym.org' }, update: { role: 'ADMIN', organizationId: tntOrg.id }, create: { email: 'deshaun@tntgym.org', passwordHash: supervisorHash, name: 'DeShaun', role: 'ADMIN', organizationId: tntOrg.id } });
+    const deshaun = await prisma.user.findUnique({ where: { email: 'deshaun@tntgym.org' }, select: { id: true } });
+    await prisma.user.upsert({ where: { email: 'deanna@tntgym.org' }, update: { organizationId: tntOrg.id, supervisorId: deshaun?.id }, create: { email: 'deanna@tntgym.org', passwordHash: employeeHash, name: 'Deanna Daniel', role: 'EMPLOYEE', organizationId: tntOrg.id, supervisorId: deshaun?.id } });
     const admin = await prisma.user.upsert({ where: { email: 'admin@gym.com' }, update: {}, create: { email: 'admin@gym.com', passwordHash: adminHash, name: 'Admin User', role: 'ADMIN' } });
     const supervisor = await prisma.user.upsert({ where: { email: 'supervisor@gym.com' }, update: {}, create: { email: 'supervisor@gym.com', passwordHash: supervisorHash, name: 'Supervisor User', role: 'SUPERVISOR' } });
     const employee = await prisma.user.upsert({ where: { email: 'employee@gym.com' }, update: {}, create: { email: 'employee@gym.com', passwordHash: employeeHash, name: 'Employee User', role: 'EMPLOYEE', supervisorId: supervisor.id } });
@@ -48,6 +51,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/eod', eodRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/resources', resourceRoutes);
 
 // Production: serve React client
 if (process.env.NODE_ENV === 'production') {
