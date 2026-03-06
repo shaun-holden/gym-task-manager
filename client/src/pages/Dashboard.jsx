@@ -5,6 +5,7 @@ import api from '../utils/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Modal from '../components/common/Modal';
 import { isOverdue } from '../utils/formatDate';
+import toast from 'react-hot-toast';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -12,6 +13,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [missingEods, setMissingEods] = useState([]);
   const [showMissingPopup, setShowMissingPopup] = useState(false);
+  const [showUrgentModal, setShowUrgentModal] = useState(false);
+  const [urgentMessage, setUrgentMessage] = useState('');
+  const [urgentTarget, setUrgentTarget] = useState('');
+  const [sendingUrgent, setSendingUrgent] = useState(false);
 
   useEffect(() => {
     async function fetchStats() {
@@ -65,6 +70,24 @@ export default function Dashboard() {
     }
     fetchStats();
   }, [user]);
+
+  async function handleSendUrgent() {
+    if (!urgentMessage.trim()) return;
+    setSendingUrgent(true);
+    try {
+      const data = { message: urgentMessage };
+      if (urgentTarget) data.targetRole = urgentTarget;
+      const res = await api.post('/api/notifications/urgent', data);
+      toast.success(`Urgent notification sent to ${res.data.count} user(s)`);
+      setShowUrgentModal(false);
+      setUrgentMessage('');
+      setUrgentTarget('');
+    } catch (err) {
+      toast.error('Failed to send urgent notification');
+    } finally {
+      setSendingUrgent(false);
+    }
+  }
 
   if (loading) return <LoadingSpinner size="lg" />;
 
@@ -159,6 +182,32 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Admin: Send Urgent Notification */}
+      {user.role === 'ADMIN' && (
+        <div className="mb-8">
+          <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border-2 border-red-200 p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <h2 className="text-lg font-bold text-gray-900">Urgent Notifications</h2>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Send a popup notification that staff must acknowledge before continuing.
+            </p>
+            <button
+              onClick={() => setShowUrgentModal(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              Send Urgent Alert
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -278,6 +327,61 @@ export default function Dashboard() {
             className="px-5 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700"
           >
             Got it
+          </button>
+        </div>
+      </Modal>
+
+      {/* Send Urgent Notification Modal */}
+      <Modal
+        isOpen={showUrgentModal}
+        onClose={() => { setShowUrgentModal(false); setUrgentMessage(''); setUrgentTarget(''); }}
+        title="Send Urgent Notification"
+      >
+        <div className="flex items-center gap-3 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <p className="text-xs text-red-700">
+            This will show a blocking popup that recipients must acknowledge to dismiss.
+          </p>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Send to</label>
+            <select
+              value={urgentTarget}
+              onChange={(e) => setUrgentTarget(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
+            >
+              <option value="">All Staff</option>
+              <option value="SUPERVISOR">Supervisors Only</option>
+              <option value="EMPLOYEE">Employees Only</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+            <textarea
+              rows={3}
+              value={urgentMessage}
+              onChange={(e) => setUrgentMessage(e.target.value)}
+              placeholder="e.g., Mandatory staff meeting in 15 minutes at the front desk."
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none text-sm"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 mt-4">
+          <button
+            onClick={() => { setShowUrgentModal(false); setUrgentMessage(''); setUrgentTarget(''); }}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSendUrgent}
+            disabled={!urgentMessage.trim() || sendingUrgent}
+            className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+          >
+            {sendingUrgent ? 'Sending...' : 'Send Alert'}
           </button>
         </div>
       </Modal>

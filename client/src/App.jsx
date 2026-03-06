@@ -21,6 +21,13 @@ import UserManagement from './pages/admin/UserManagement';
 import OrganizationManagement from './pages/admin/OrganizationManagement';
 import Notifications from './pages/Notifications';
 import Resources from './pages/Resources';
+import UrgentNotificationPopup from './components/UrgentNotificationPopup';
+
+function AuthedUrgentPopup() {
+  const { user } = useAuth();
+  if (!user) return null;
+  return <UrgentNotificationPopup />;
+}
 
 function ProtectedRoute({ children, requiredRoles }) {
   const { user, loading } = useAuth();
@@ -39,6 +46,7 @@ export default function App() {
     <BrowserRouter>
       <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
       <Navbar />
+      <AuthedUrgentPopup />
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Routes>
           {/* Public */}

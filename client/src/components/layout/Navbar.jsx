@@ -108,6 +108,8 @@ export default function Navbar() {
                               navigate(`/tasks/${n.relatedId}`);
                             } else if (n.type === 'EOD_SUBMITTED') {
                               navigate(`/eod/submissions/${n.relatedId}`);
+                            } else if (n.type === 'URGENT') {
+                              navigate('/dashboard');
                             } else {
                               navigate('/eod');
                             }

@@ -7,6 +7,7 @@ const typeIcons = {
   TASK_COMPLETED: '✅',
   EOD_SUBMITTED: '📝',
   EOD_REMINDER: '⏰',
+  URGENT: '🚨',
 };
 
 export default function Notifications() {
@@ -19,6 +20,8 @@ export default function Notifications() {
       navigate(`/tasks/${n.relatedId}`);
     } else if (n.type === 'EOD_SUBMITTED') {
       navigate(`/eod/submissions/${n.relatedId}`);
+    } else if (n.type === 'URGENT') {
+      navigate('/dashboard');
     } else {
       navigate('/eod');
     }

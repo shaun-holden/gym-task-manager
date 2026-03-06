@@ -6,7 +6,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
-import { formatDate, isOverdue } from '../../utils/formatDate';
+import { formatDate, formatDateTime, isOverdue } from '../../utils/formatDate';
 import toast from 'react-hot-toast';
 
 const CATEGORIES = ['', 'CLEANING', 'EQUIPMENT_MAINTENANCE', 'FRONT_DESK', 'CLASSES', 'SAFETY', 'OTHER'];
@@ -90,6 +90,9 @@ export default function TaskList() {
 
   const canCreate = user.role === 'ADMIN' || user.role === 'SUPERVISOR';
 
+  const activeTasks = tasks.filter((t) => !t.isCompleted);
+  const completedTasks = tasks.filter((t) => t.isCompleted);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -155,41 +158,85 @@ export default function TaskList() {
           ) : null}
         />
       ) : (
-        <div className="bg-white rounded-xl border overflow-hidden">
-          <div className="divide-y">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                className={`flex items-center gap-4 px-4 py-3 hover:bg-gray-50 ${
-                  !task.isCompleted && isOverdue(task.dueDate) ? 'bg-red-50/50' : ''
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={task.isCompleted}
-                  onChange={() => handleCheckboxClick(task)}
-                  className="h-5 w-5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
-                />
-                <Link to={`/tasks/${task.id}`} className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className={`text-sm font-medium ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-900'}`}>
-                      {task.title}
-                    </p>
-                    <Badge value={task.category} />
-                  </div>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xs text-gray-500">{task.assignedTo?.name}</span>
-                    {task.dueDate && (
-                      <span className={`text-xs ${!task.isCompleted && isOverdue(task.dueDate) ? 'text-red-600 font-medium' : 'text-gray-400'}`}>
-                        Due {formatDate(task.dueDate)}
-                      </span>
-                    )}
-                  </div>
-                </Link>
+        <>
+          {/* Active Tasks */}
+          {activeTasks.length > 0 && (
+            <div className="bg-white rounded-xl border overflow-hidden mb-6">
+              <div className="px-4 py-3 bg-gray-50 border-b">
+                <h2 className="text-sm font-semibold text-gray-700">Active Tasks ({activeTasks.length})</h2>
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="divide-y">
+                {activeTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className={`flex items-center gap-4 px-4 py-3 hover:bg-gray-50 ${
+                      isOverdue(task.dueDate) ? 'bg-red-50/50' : ''
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={() => handleCheckboxClick(task)}
+                      className="h-5 w-5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+                    />
+                    <Link to={`/tasks/${task.id}`} className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900">{task.title}</p>
+                        <Badge value={task.category} />
+                      </div>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-xs text-gray-500">{task.assignedTo?.name}</span>
+                        {task.dueDate && (
+                          <span className={`text-xs ${isOverdue(task.dueDate) ? 'text-red-600 font-medium' : 'text-gray-400'}`}>
+                            Due {formatDate(task.dueDate)}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Completed Tasks */}
+          {completedTasks.length > 0 && (
+            <div className="bg-white rounded-xl border overflow-hidden">
+              <div className="px-4 py-3 bg-green-50 border-b">
+                <h2 className="text-sm font-semibold text-green-700">Completed ({completedTasks.length})</h2>
+              </div>
+              <div className="divide-y">
+                {completedTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={true}
+                      onChange={() => handleCheckboxClick(task)}
+                      className="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
+                    />
+                    <Link to={`/tasks/${task.id}`} className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium line-through text-gray-400">{task.title}</p>
+                        <Badge value={task.category} />
+                      </div>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-xs text-gray-500">{task.assignedTo?.name}</span>
+                        {task.completedAt && (
+                          <span className="text-xs text-green-600">
+                            Completed {formatDateTime(task.completedAt)}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Completion Note Modal */}

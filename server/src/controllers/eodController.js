@@ -251,6 +251,16 @@ async function getSubmission(req, res, next) {
     if (req.user.role === 'EMPLOYEE' && submission.employeeId !== req.user.id) {
       return res.status(403).json({ error: 'Access denied.' });
     }
+    if (req.user.role === 'SUPERVISOR') {
+      const subordinateIds = await prisma.user.findMany({
+        where: { supervisorId: req.user.id },
+        select: { id: true },
+      });
+      const allowedIds = [req.user.id, ...subordinateIds.map((u) => u.id)];
+      if (!allowedIds.includes(submission.employeeId)) {
+        return res.status(403).json({ error: 'Access denied.' });
+      }
+    }
 
     res.json({ submission });
   } catch (err) {
