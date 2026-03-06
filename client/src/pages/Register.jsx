@@ -7,6 +7,7 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('EMPLOYEE');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     try {
-      await register(name, email, password);
+      await register(name, email, password, role);
       navigate('/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed');
@@ -65,6 +66,41 @@ export default function Register() {
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
               placeholder="Min 6 characters"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">I am signing up as</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setRole('EMPLOYEE')}
+                className={`flex flex-col items-center gap-1.5 p-4 rounded-lg border-2 transition-all ${
+                  role === 'EMPLOYEE'
+                    ? 'border-brand-500 bg-brand-50 text-brand-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span className="text-sm font-semibold">Employee</span>
+                <span className="text-xs text-center leading-tight opacity-75">Complete tasks & EODs</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('SUPERVISOR')}
+                className={`flex flex-col items-center gap-1.5 p-4 rounded-lg border-2 transition-all ${
+                  role === 'SUPERVISOR'
+                    ? 'border-brand-500 bg-brand-50 text-brand-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="text-sm font-semibold">Employer</span>
+                <span className="text-xs text-center leading-tight opacity-75">Manage team & tasks</span>
+              </button>
+            </div>
           </div>
           <button
             type="submit"

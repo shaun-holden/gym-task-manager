@@ -5,6 +5,7 @@ import api from '../../utils/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import EmptyState from '../../components/common/EmptyState';
 import Badge from '../../components/common/Badge';
+import Modal from '../../components/common/Modal';
 import { formatDate, isOverdue } from '../../utils/formatDate';
 import toast from 'react-hot-toast';
 
@@ -20,6 +21,9 @@ export default function TaskList() {
   const [category, setCategory] = useState(searchParams.get('category') || '');
   const [status, setStatus] = useState(searchParams.get('isCompleted') || '');
   const [assignee, setAssignee] = useState(searchParams.get('assignedToId') || '');
+
+  const [completingTask, setCompletingTask] = useState(null);
+  const [completionNote, setCompletionNote] = useState('');
 
   useEffect(() => {
     fetchTasks();
@@ -45,15 +49,42 @@ export default function TaskList() {
     }
   }
 
-  async function handleToggleComplete(taskId) {
+  function handleCheckboxClick(task) {
+    if (!task.isCompleted) {
+      setCompletingTask(task);
+      setCompletionNote('');
+    } else {
+      doToggleComplete(task.id);
+    }
+  }
+
+  async function doToggleComplete(taskId, note) {
     try {
-      const res = await api.patch(`/api/tasks/${taskId}/complete`);
+      const res = await api.patch(`/api/tasks/${taskId}/complete`, {
+        completionNote: note || undefined,
+      });
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? res.data.task : t))
       );
       toast.success(res.data.task.isCompleted ? 'Task completed!' : 'Task reopened');
     } catch (err) {
       toast.error('Failed to update task');
+    }
+  }
+
+  function handleCompleteWithNote() {
+    if (completingTask) {
+      doToggleComplete(completingTask.id, completionNote);
+      setCompletingTask(null);
+      setCompletionNote('');
+    }
+  }
+
+  function handleCompleteWithoutNote() {
+    if (completingTask) {
+      doToggleComplete(completingTask.id);
+      setCompletingTask(null);
+      setCompletionNote('');
     }
   }
 
@@ -136,7 +167,7 @@ export default function TaskList() {
                 <input
                   type="checkbox"
                   checked={task.isCompleted}
-                  onChange={() => handleToggleComplete(task.id)}
+                  onChange={() => handleCheckboxClick(task)}
                   className="h-5 w-5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
                 />
                 <Link to={`/tasks/${task.id}`} className="flex-1 min-w-0">
@@ -160,6 +191,39 @@ export default function TaskList() {
           </div>
         </div>
       )}
+
+      {/* Completion Note Modal */}
+      <Modal
+        isOpen={!!completingTask}
+        onClose={() => { setCompletingTask(null); setCompletionNote(''); }}
+        title="Complete Task"
+      >
+        <p className="text-sm text-gray-600 mb-1">
+          Marking <span className="font-semibold text-gray-900">"{completingTask?.title}"</span> as complete.
+        </p>
+        <p className="text-sm text-gray-500 mb-4">Add an optional note about the completed work.</p>
+        <textarea
+          rows={3}
+          value={completionNote}
+          onChange={(e) => setCompletionNote(e.target.value)}
+          placeholder="e.g., All mats cleaned and sanitized. Replaced one worn mat near vault."
+          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-sm"
+        />
+        <div className="flex justify-end gap-3 mt-4">
+          <button
+            onClick={handleCompleteWithoutNote}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+          >
+            Skip Note
+          </button>
+          <button
+            onClick={handleCompleteWithNote}
+            className="px-5 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700"
+          >
+            Complete Task
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

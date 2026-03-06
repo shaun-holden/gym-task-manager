@@ -193,12 +193,20 @@ async function toggleComplete(req, res, next) {
     }
 
     const isCompleted = !existing.isCompleted;
+    const { completionNote } = req.body || {};
+    const updateData = {
+      isCompleted,
+      completedAt: isCompleted ? new Date() : null,
+    };
+    if (isCompleted && completionNote) {
+      updateData.notes = existing.notes
+        ? `${existing.notes}\n\n--- Completion Note ---\n${completionNote}`
+        : `--- Completion Note ---\n${completionNote}`;
+    }
+
     const task = await prisma.task.update({
       where: { id: req.params.id },
-      data: {
-        isCompleted,
-        completedAt: isCompleted ? new Date() : null,
-      },
+      data: updateData,
       include: {
         assignedTo: { select: { id: true, name: true } },
         createdBy: { select: { id: true, name: true } },

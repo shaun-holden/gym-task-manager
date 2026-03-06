@@ -5,6 +5,7 @@ import api from '../../utils/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Badge from '../../components/common/Badge';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import Modal from '../../components/common/Modal';
 import { formatDate, formatDateTime, isOverdue } from '../../utils/formatDate';
 import toast from 'react-hot-toast';
 
@@ -15,6 +16,8 @@ export default function TaskDetail() {
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDelete, setShowDelete] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [completionNote, setCompletionNote] = useState('');
 
   useEffect(() => {
     api.get(`/api/tasks/${id}`)
@@ -26,9 +29,20 @@ export default function TaskDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  async function handleToggleComplete() {
+  function handleToggleComplete() {
+    if (!task.isCompleted) {
+      setShowCompleteModal(true);
+      setCompletionNote('');
+    } else {
+      doToggle();
+    }
+  }
+
+  async function doToggle(note) {
     try {
-      const res = await api.patch(`/api/tasks/${id}/complete`);
+      const res = await api.patch(`/api/tasks/${id}/complete`, {
+        completionNote: note || undefined,
+      });
       setTask(res.data.task);
       toast.success(res.data.task.isCompleted ? 'Task completed!' : 'Task reopened');
     } catch (err) {
@@ -57,7 +71,7 @@ export default function TaskDetail() {
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center gap-2 mb-6">
         <Link to="/tasks" className="text-sm text-gray-500 hover:text-brand-600">
-          ← Tasks
+          &larr; Tasks
         </Link>
       </div>
 
@@ -161,6 +175,39 @@ export default function TaskDetail() {
         title="Delete Task"
         message={`Are you sure you want to delete "${task.title}"? This cannot be undone.`}
       />
+
+      {/* Completion Note Modal */}
+      <Modal
+        isOpen={showCompleteModal}
+        onClose={() => { setShowCompleteModal(false); setCompletionNote(''); }}
+        title="Complete Task"
+      >
+        <p className="text-sm text-gray-600 mb-1">
+          Marking <span className="font-semibold text-gray-900">"{task.title}"</span> as complete.
+        </p>
+        <p className="text-sm text-gray-500 mb-4">Add an optional note about the completed work.</p>
+        <textarea
+          rows={3}
+          value={completionNote}
+          onChange={(e) => setCompletionNote(e.target.value)}
+          placeholder="e.g., All mats cleaned and sanitized. Replaced one worn mat near vault."
+          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-sm"
+        />
+        <div className="flex justify-end gap-3 mt-4">
+          <button
+            onClick={() => { doToggle(); setShowCompleteModal(false); setCompletionNote(''); }}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+          >
+            Skip Note
+          </button>
+          <button
+            onClick={() => { doToggle(completionNote); setShowCompleteModal(false); setCompletionNote(''); }}
+            className="px-5 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700"
+          >
+            Complete Task
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

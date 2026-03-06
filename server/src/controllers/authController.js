@@ -4,16 +4,19 @@ const generateToken = require('../utils/generateToken');
 
 async function register(req, res, next) {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return res.status(400).json({ error: 'Email already registered.' });
     }
 
+    const allowedRoles = ['EMPLOYEE', 'SUPERVISOR'];
+    const selectedRole = allowedRoles.includes(role) ? role : 'EMPLOYEE';
+
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { name, email, passwordHash, role: 'EMPLOYEE' },
+      data: { name, email, passwordHash, role: selectedRole },
       select: { id: true, name: true, email: true, role: true, supervisorId: true },
     });
 
