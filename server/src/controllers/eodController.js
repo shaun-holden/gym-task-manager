@@ -4,7 +4,7 @@ const { createNotification } = require('../utils/notify');
 async function getTemplates(req, res, next) {
   try {
     const where = {};
-    if (req.user.organizationId) {
+    if (req.user.role !== 'ADMIN' && req.user.organizationId) {
       where.organizationId = req.user.organizationId;
     }
     if (req.user.role !== 'ADMIN') {

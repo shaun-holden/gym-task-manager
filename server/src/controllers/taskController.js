@@ -24,8 +24,8 @@ async function getTasks(req, res, next) {
       where.assignedToId = { in: allowedIds };
     }
 
-    // Scope to organization
-    if (req.user.organizationId) {
+    // Scope to organization (admins see all)
+    if (req.user.role !== 'ADMIN' && req.user.organizationId) {
       where.organizationId = req.user.organizationId;
     }
 

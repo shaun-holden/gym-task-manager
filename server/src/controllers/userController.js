@@ -7,8 +7,8 @@ async function getUsers(req, res, next) {
 
     if (role) where.role = role;
 
-    // Scope by organization
-    if (req.user.organizationId) {
+    // Scope by organization (admins see all)
+    if (req.user.role !== 'ADMIN' && req.user.organizationId) {
       where.organizationId = req.user.organizationId;
     }
 
