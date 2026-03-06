@@ -8,7 +8,7 @@ END $$;
 -- Add submittedById to EOD submissions (idempotent)
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'eod_submissions' AND column_name = 'submitted_by_id') THEN
-    ALTER TABLE "eod_submissions" ADD COLUMN "submitted_by_id" UUID;
+    ALTER TABLE "eod_submissions" ADD COLUMN "submitted_by_id" TEXT;
   END IF;
 END $$;
 
@@ -30,10 +30,10 @@ END $$;
 
 -- Create task_categories table (idempotent)
 CREATE TABLE IF NOT EXISTS "task_categories" (
-  "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+  "id" TEXT NOT NULL DEFAULT gen_random_uuid()::TEXT,
   "name" TEXT NOT NULL,
-  "organization_id" UUID,
-  "created_by_id" UUID NOT NULL,
+  "organization_id" TEXT,
+  "created_by_id" TEXT NOT NULL,
   "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "task_categories_pkey" PRIMARY KEY ("id"),
   CONSTRAINT "task_categories_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "organizations"("id") ON DELETE SET NULL ON UPDATE CASCADE,
