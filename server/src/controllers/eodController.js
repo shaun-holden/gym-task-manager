@@ -258,4 +258,63 @@ async function getSubmission(req, res, next) {
   }
 }
 
-module.exports = { getTemplates, getTemplate, createTemplate, updateTemplate, submitEod, getSubmissions, getSubmission };
+async function getMissingEods(req, res, next) {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get employees under this supervisor/admin
+    let employeeWhere = {};
+    if (req.user.role === 'SUPERVISOR') {
+      employeeWhere = { supervisorId: req.user.id };
+    } else if (req.user.role === 'ADMIN' && req.user.organizationId) {
+      employeeWhere = { organizationId: req.user.organizationId, role: 'EMPLOYEE' };
+    } else if (req.user.role === 'ADMIN') {
+      employeeWhere = { role: 'EMPLOYEE' };
+    } else {
+      return res.json({ missing: [] });
+    }
+
+    const employees = await prisma.user.findMany({
+      where: employeeWhere,
+      select: { id: true, name: true },
+    });
+
+    // Get active templates for this org
+    const templateWhere = { isActive: true };
+    if (req.user.organizationId) {
+      templateWhere.organizationId = req.user.organizationId;
+    }
+    const templates = await prisma.eodTemplate.findMany({
+      where: templateWhere,
+      select: { id: true, title: true },
+    });
+
+    if (templates.length === 0 || employees.length === 0) {
+      return res.json({ missing: [] });
+    }
+
+    // Check which employees haven't submitted today
+    const missing = [];
+    for (const emp of employees) {
+      const missingTemplates = [];
+      for (const tmpl of templates) {
+        const submission = await prisma.eodSubmission.findFirst({
+          where: { employeeId: emp.id, templateId: tmpl.id, date: today },
+        });
+        if (!submission) {
+          missingTemplates.push(tmpl.title);
+        }
+      }
+      if (missingTemplates.length > 0) {
+        missing.push({ id: emp.id, name: emp.name, templates: missingTemplates });
+      }
+    }
+
+    res.json({ missing });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { getTemplates, getTemplate, createTemplate, updateTemplate, submitEod, getSubmissions, getSubmission, getMissingEods };

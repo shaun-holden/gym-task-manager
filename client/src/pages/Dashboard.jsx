@@ -3,12 +3,15 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api from '../utils/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import Modal from '../components/common/Modal';
 import { isOverdue } from '../utils/formatDate';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [missingEods, setMissingEods] = useState([]);
+  const [showMissingPopup, setShowMissingPopup] = useState(false);
 
   useEffect(() => {
     async function fetchStats() {
@@ -39,14 +42,18 @@ export default function Dashboard() {
 
         // Supervisor/Admin team stats
         if (user.role !== 'EMPLOYEE') {
-          const usersRes = await api.get('/api/users');
+          const [usersRes, missingRes] = await Promise.all([
+            api.get('/api/users'),
+            api.get('/api/eod/missing'),
+          ]);
           const teamMembers = usersRes.data.users.filter((u) => u.id !== user.id);
-          const submittedIds = submissions.map((s) => s.employee.id);
-          const pendingEods = teamMembers.filter(
-            (u) => u.role === 'EMPLOYEE' && !submittedIds.includes(u.id)
-          );
           data.teamCount = teamMembers.length;
-          data.pendingEods = pendingEods;
+          data.pendingEods = missingRes.data.missing;
+
+          setMissingEods(missingRes.data.missing);
+          if (missingRes.data.missing.length > 0) {
+            setShowMissingPopup(true);
+          }
         }
 
         setStats(data);
@@ -231,6 +238,7 @@ export default function Dashboard() {
                   <div key={u.id} className="flex items-center gap-2 text-sm">
                     <span className="w-2 h-2 rounded-full bg-yellow-400" />
                     <span className="text-gray-700">{u.name}</span>
+                    <span className="text-xs text-gray-400">— {u.templates.join(', ')}</span>
                   </div>
                 ))}
               </div>
@@ -238,6 +246,41 @@ export default function Dashboard() {
           )}
         </div>
       )}
+
+      {/* Missing EOD Popup for Supervisors/Admins */}
+      <Modal
+        isOpen={showMissingPopup}
+        onClose={() => setShowMissingPopup(false)}
+        title="Employees Missing EOD Today"
+      >
+        <div className="flex items-center gap-3 mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <svg className="w-6 h-6 text-yellow-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <p className="text-sm text-yellow-800">
+            <span className="font-semibold">{missingEods.length}</span> employee{missingEods.length !== 1 ? 's have' : ' has'} not submitted their EOD report today.
+          </p>
+        </div>
+        <div className="space-y-3 max-h-64 overflow-y-auto">
+          {missingEods.map((emp) => (
+            <div key={emp.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-gray-900">{emp.name}</p>
+                <p className="text-xs text-gray-500">Missing: {emp.templates.join(', ')}</p>
+              </div>
+              <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 shrink-0" />
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={() => setShowMissingPopup(false)}
+            className="px-5 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700"
+          >
+            Got it
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

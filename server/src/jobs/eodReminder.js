@@ -15,10 +15,19 @@ function startEodReminder(io) {
       today.setHours(0, 0, 0, 0);
 
       const templates = await prisma.eodTemplate.findMany({ where: { isActive: true } });
-      const employees = await prisma.user.findMany({ where: { role: 'EMPLOYEE' } });
+      const employees = await prisma.user.findMany({
+        where: { role: 'EMPLOYEE' },
+        select: { id: true, name: true, email: true, supervisorId: true, organizationId: true },
+      });
+
+      // Track missing EODs per supervisor
+      const supervisorMissing = {};
 
       for (const employee of employees) {
         for (const template of templates) {
+          // Only check templates in the employee's org (or templates with no org)
+          if (template.organizationId && template.organizationId !== employee.organizationId) continue;
+
           const existing = await prisma.eodSubmission.findFirst({
             where: { employeeId: employee.id, templateId: template.id, date: today },
           });
@@ -38,8 +47,26 @@ function startEodReminder(io) {
               message: `Reminder: Please submit your EOD report "${template.title}"`,
               relatedId: template.id,
             });
+
+            // Track for supervisor notification
+            if (employee.supervisorId) {
+              if (!supervisorMissing[employee.supervisorId]) {
+                supervisorMissing[employee.supervisorId] = [];
+              }
+              supervisorMissing[employee.supervisorId].push(employee.name);
+            }
           }
         }
+      }
+
+      // Notify supervisors about employees with missing EODs
+      for (const [supId, names] of Object.entries(supervisorMissing)) {
+        const uniqueNames = [...new Set(names)];
+        await createNotification(io, {
+          userId: supId,
+          type: 'EOD_REMINDER',
+          message: `EOD not submitted by: ${uniqueNames.join(', ')}`,
+        });
       }
 
       console.log('EOD reminder check complete.');

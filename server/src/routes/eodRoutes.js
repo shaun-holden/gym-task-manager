@@ -4,7 +4,7 @@ const validate = require('../middleware/validate');
 const { authenticate, authorize } = require('../middleware/auth');
 const {
   getTemplates, getTemplate, createTemplate, updateTemplate,
-  submitEod, getSubmissions, getSubmission,
+  submitEod, getSubmissions, getSubmission, getMissingEods,
 } = require('../controllers/eodController');
 
 const router = Router();
@@ -50,5 +50,6 @@ router.post(
 );
 router.get('/submissions', getSubmissions);
 router.get('/submissions/:id', getSubmission);
+router.get('/missing', authorize('ADMIN', 'SUPERVISOR'), getMissingEods);
 
 module.exports = router;
