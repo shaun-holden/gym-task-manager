@@ -4,6 +4,9 @@ const { createNotification } = require('../utils/notify');
 async function getTemplates(req, res, next) {
   try {
     const where = {};
+    if (req.user.organizationId) {
+      where.organizationId = req.user.organizationId;
+    }
     if (req.user.role !== 'ADMIN') {
       where.isActive = true;
     }
@@ -48,6 +51,7 @@ async function createTemplate(req, res, next) {
       data: {
         title,
         createdById: req.user.id,
+        organizationId: req.user.organizationId || null,
         items: {
           create: items.map((item, idx) => ({
             question: item.question,

@@ -11,7 +11,7 @@ const router = Router();
 router.get('/supervisors', async (req, res) => {
   const supervisors = await prisma.user.findMany({
     where: { role: { in: ['SUPERVISOR', 'ADMIN'] } },
-    select: { id: true, name: true },
+    select: { id: true, name: true, organization: { select: { name: true } } },
     orderBy: { name: 'asc' },
   });
   res.json({ supervisors });

@@ -36,16 +36,31 @@ enum NotificationType {
   EOD_REMINDER
 }
 
-model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  name         String
-  role         Role     @default(EMPLOYEE)
-  supervisorId String?  @map("supervisor_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
+  users         User[]
+  tasks         Task[]
+  eodTemplates  EodTemplate[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  passwordHash   String   @map("password_hash")
+  name           String
+  role           Role     @default(EMPLOYEE)
+  supervisorId   String?  @map("supervisor_id")
+  organizationId String?  @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
   supervisor   User?  @relation("TeamHierarchy", fields: [supervisorId], references: [id])
   subordinates User[] @relation("TeamHierarchy")
 
@@ -59,37 +74,41 @@ model User {
 }
 
 model Task {
-  id           String       @id @default(uuid())
-  title        String
-  description  String?
-  category     TaskCategory @default(OTHER)
-  startDate    DateTime?    @map("start_date")
-  dueDate      DateTime?    @map("due_date")
-  isCompleted  Boolean      @default(false) @map("is_completed")
-  completedAt  DateTime?    @map("completed_at")
-  notes        String?
-  assignedToId String       @map("assigned_to_id")
-  createdById  String       @map("created_by_id")
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
+  id             String       @id @default(uuid())
+  title          String
+  description    String?
+  category       TaskCategory @default(OTHER)
+  startDate      DateTime?    @map("start_date")
+  dueDate        DateTime?    @map("due_date")
+  isCompleted    Boolean      @default(false) @map("is_completed")
+  completedAt    DateTime?    @map("completed_at")
+  notes          String?
+  assignedToId   String       @map("assigned_to_id")
+  createdById    String       @map("created_by_id")
+  organizationId String?      @map("organization_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  assignedTo User @relation("TaskAssignee", fields: [assignedToId], references: [id])
-  createdBy  User @relation("TaskCreator", fields: [createdById], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  assignedTo   User          @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  createdBy    User          @relation("TaskCreator", fields: [createdById], references: [id])
 
   @@map("tasks")
 }
 
 model EodTemplate {
-  id          String   @id @default(uuid())
-  title       String
-  createdById String   @map("created_by_id")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(uuid())
+  title          String
+  createdById    String   @map("created_by_id")
+  isActive       Boolean  @default(true) @map("is_active")
+  organizationId String?  @map("organization_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  createdBy   User              @relation(fields: [createdById], references: [id])
-  items       EodTemplateItem[]
-  submissions EodSubmission[]
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  createdBy    User              @relation(fields: [createdById], references: [id])
+  items        EodTemplateItem[]
+  submissions  EodSubmission[]
 
   @@map("eod_templates")
 }

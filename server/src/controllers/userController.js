@@ -7,6 +7,11 @@ async function getUsers(req, res, next) {
 
     if (role) where.role = role;
 
+    // Scope by organization
+    if (req.user.organizationId) {
+      where.organizationId = req.user.organizationId;
+    }
+
     if (req.user.role === 'SUPERVISOR') {
       const subordinates = await prisma.user.findMany({
         where: { supervisorId: req.user.id },

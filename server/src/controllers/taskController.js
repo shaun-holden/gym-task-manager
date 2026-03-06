@@ -24,6 +24,11 @@ async function getTasks(req, res, next) {
       where.assignedToId = { in: allowedIds };
     }
 
+    // Scope to organization
+    if (req.user.organizationId) {
+      where.organizationId = req.user.organizationId;
+    }
+
     // Additional filters
     if (assignedToId) {
       if (allowedIds && !allowedIds.includes(assignedToId)) {
@@ -100,6 +105,7 @@ async function createTask(req, res, next) {
         notes,
         assignedToId,
         createdById: req.user.id,
+        organizationId: req.user.organizationId || null,
       },
       include: {
         assignedTo: { select: { id: true, name: true } },

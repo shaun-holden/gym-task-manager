@@ -11,6 +11,7 @@ export default function Register() {
   const [role, setRole] = useState('EMPLOYEE');
   const [supervisorId, setSupervisorId] = useState('');
   const [supervisors, setSupervisors] = useState([]);
+  const [organizationName, setOrganizationName] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -22,12 +23,16 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (role === 'EMPLOYEE' && !supervisorId) {
-      toast.error('Please select your team supervisor');
+      toast.error('Please select your team / gym');
+      return;
+    }
+    if (role === 'SUPERVISOR' && !organizationName.trim()) {
+      toast.error('Please enter your gym / organization name');
       return;
     }
     setLoading(true);
     try {
-      await register(name, email, password, role, role === 'EMPLOYEE' ? supervisorId : null);
+      await register(name, email, password, role, role === 'EMPLOYEE' ? supervisorId : null, role === 'SUPERVISOR' ? organizationName.trim() : null);
       navigate('/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed');
@@ -113,17 +118,31 @@ export default function Register() {
               </button>
             </div>
           </div>
+          {role === 'SUPERVISOR' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Gym / Organization Name</label>
+              <input
+                type="text"
+                value={organizationName}
+                onChange={(e) => setOrganizationName(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                placeholder="e.g., TNT Gymnastics"
+              />
+            </div>
+          )}
           {role === 'EMPLOYEE' && supervisors.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Your Supervisor / Team</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Gym / Team</label>
               <select
                 value={supervisorId}
                 onChange={(e) => setSupervisorId(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
               >
-                <option value="">Select your supervisor...</option>
+                <option value="">Select your gym...</option>
                 {supervisors.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <option key={s.id} value={s.id}>
+                    {s.organization?.name ? `${s.organization.name} — ${s.name}` : s.name}
+                  </option>
                 ))}
               </select>
             </div>
