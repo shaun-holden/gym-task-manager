@@ -1,17 +1,35 @@
--- Add isRequired to EOD template items
-ALTER TABLE "eod_template_items" ADD COLUMN "is_required" BOOLEAN NOT NULL DEFAULT false;
+-- Add isRequired to EOD template items (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'eod_template_items' AND column_name = 'is_required') THEN
+    ALTER TABLE "eod_template_items" ADD COLUMN "is_required" BOOLEAN NOT NULL DEFAULT false;
+  END IF;
+END $$;
 
--- Add submittedById to EOD submissions (for on-behalf submissions)
-ALTER TABLE "eod_submissions" ADD COLUMN "submitted_by_id" UUID;
-ALTER TABLE "eod_submissions" ADD CONSTRAINT "eod_submissions_submitted_by_id_fkey" FOREIGN KEY ("submitted_by_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- Add submittedById to EOD submissions (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'eod_submissions' AND column_name = 'submitted_by_id') THEN
+    ALTER TABLE "eod_submissions" ADD COLUMN "submitted_by_id" UUID;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'eod_submissions_submitted_by_id_fkey') THEN
+    ALTER TABLE "eod_submissions" ADD CONSTRAINT "eod_submissions_submitted_by_id_fkey" FOREIGN KEY ("submitted_by_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 -- Convert task category from enum to text for custom categories
-ALTER TABLE "tasks" ALTER COLUMN "category" TYPE TEXT USING "category"::TEXT;
-ALTER TABLE "tasks" ALTER COLUMN "category" SET DEFAULT 'OTHER';
-DROP TYPE "TaskCategory";
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'TaskCategory') THEN
+    ALTER TABLE "tasks" ALTER COLUMN "category" DROP DEFAULT;
+    ALTER TABLE "tasks" ALTER COLUMN "category" TYPE TEXT USING "category"::TEXT;
+    ALTER TABLE "tasks" ALTER COLUMN "category" SET DEFAULT 'OTHER';
+    DROP TYPE "TaskCategory";
+  END IF;
+END $$;
 
--- Create task_categories table
-CREATE TABLE "task_categories" (
+-- Create task_categories table (idempotent)
+CREATE TABLE IF NOT EXISTS "task_categories" (
   "id" UUID NOT NULL DEFAULT gen_random_uuid(),
   "name" TEXT NOT NULL,
   "organization_id" UUID,
