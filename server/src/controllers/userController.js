@@ -162,8 +162,12 @@ async function deleteUser(req, res, next) {
       prisma.notification.deleteMany({ where: { userId: req.params.id } }),
       prisma.eodResponse.deleteMany({ where: { submission: { employeeId: req.params.id } } }),
       prisma.eodSubmission.deleteMany({ where: { employeeId: req.params.id } }),
+      prisma.eodResponse.deleteMany({ where: { templateItem: { template: { createdById: req.params.id } } } }),
+      prisma.eodTemplateItem.deleteMany({ where: { template: { createdById: req.params.id } } }),
+      prisma.eodTemplate.deleteMany({ where: { createdById: req.params.id } }),
       prisma.user.updateMany({ where: { supervisorId: req.params.id }, data: { supervisorId: null } }),
       prisma.task.deleteMany({ where: { assignedToId: req.params.id } }),
+      prisma.task.deleteMany({ where: { createdById: req.params.id } }),
       prisma.resource.deleteMany({ where: { createdById: req.params.id } }),
       prisma.user.delete({ where: { id: req.params.id } }),
     ]);
