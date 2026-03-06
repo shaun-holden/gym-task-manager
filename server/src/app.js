@@ -29,6 +29,7 @@ app.post('/api/seed', async (req, res) => {
     const adminHash = await bcrypt.hash('admin123', 10);
     const supervisorHash = await bcrypt.hash('supervisor123', 10);
     const employeeHash = await bcrypt.hash('employee123', 10);
+    await prisma.user.upsert({ where: { email: 'shaunm78@me.com' }, update: { role: 'ADMIN' }, create: { email: 'shaunm78@me.com', passwordHash: adminHash, name: 'DeShaun Holden', role: 'ADMIN' } });
     const admin = await prisma.user.upsert({ where: { email: 'admin@gym.com' }, update: {}, create: { email: 'admin@gym.com', passwordHash: adminHash, name: 'Admin User', role: 'ADMIN' } });
     const supervisor = await prisma.user.upsert({ where: { email: 'supervisor@gym.com' }, update: {}, create: { email: 'supervisor@gym.com', passwordHash: supervisorHash, name: 'Supervisor User', role: 'SUPERVISOR' } });
     const employee = await prisma.user.upsert({ where: { email: 'employee@gym.com' }, update: {}, create: { email: 'employee@gym.com', passwordHash: employeeHash, name: 'Employee User', role: 'EMPLOYEE', supervisorId: supervisor.id } });
