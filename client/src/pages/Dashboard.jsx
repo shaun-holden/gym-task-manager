@@ -69,6 +69,8 @@ export default function Dashboard() {
       }
     }
     fetchStats();
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
   }, [user]);
 
   async function handleSendUrgent() {

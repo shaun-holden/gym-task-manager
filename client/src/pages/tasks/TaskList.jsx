@@ -30,6 +30,8 @@ export default function TaskList() {
     if (user.role !== 'EMPLOYEE') {
       api.get('/api/users').then((res) => setUsers(res.data.users));
     }
+    const interval = setInterval(fetchTasks, 30000);
+    return () => clearInterval(interval);
   }, [category, status, assignee]);
 
   async function fetchTasks() {

@@ -21,6 +21,8 @@ export default function EodSubmissions() {
     if (user.role !== 'EMPLOYEE') {
       api.get('/api/users').then((res) => setUsers(res.data.users));
     }
+    const interval = setInterval(fetchSubmissions, 30000);
+    return () => clearInterval(interval);
   }, [startDate, endDate, employeeFilter]);
 
   async function fetchSubmissions() {
