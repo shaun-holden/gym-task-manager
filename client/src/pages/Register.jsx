@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import api from '../utils/api';
 import toast from 'react-hot-toast';
 
 export default function Register() {
@@ -8,15 +9,25 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('EMPLOYEE');
+  const [supervisorId, setSupervisorId] = useState('');
+  const [supervisors, setSupervisors] = useState([]);
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    api.get('/api/auth/supervisors').then((res) => setSupervisors(res.data.supervisors));
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (role === 'EMPLOYEE' && !supervisorId) {
+      toast.error('Please select your team supervisor');
+      return;
+    }
     setLoading(true);
     try {
-      await register(name, email, password, role);
+      await register(name, email, password, role, role === 'EMPLOYEE' ? supervisorId : null);
       navigate('/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed');
@@ -102,6 +113,21 @@ export default function Register() {
               </button>
             </div>
           </div>
+          {role === 'EMPLOYEE' && supervisors.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Your Supervisor / Team</label>
+              <select
+                value={supervisorId}
+                onChange={(e) => setSupervisorId(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+              >
+                <option value="">Select your supervisor...</option>
+                {supervisors.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <button
             type="submit"
             disabled={loading}
