@@ -4,7 +4,7 @@
   "description": "Internal task management app for gymnastics gym",
   "scripts": {
     "build": "cd client && npm install && npm run build && cd ../server && npm install && npx prisma generate",
-    "start": "cd server && npx prisma migrate resolve --rolled-back 0008_categories_required_onbehalf 2>/dev/null; npx prisma migrate deploy && node src/server.js",
+    "start": "cd server && npx prisma migrate deploy && node src/server.js",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev"
   }
