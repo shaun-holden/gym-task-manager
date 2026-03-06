@@ -19,7 +19,7 @@ export default function EodTemplateForm() {
   const navigate = useNavigate();
 
   const [title, setTitle] = useState('');
-  const [items, setItems] = useState([{ question: '', type: 'TEXT', sortOrder: 1 }]);
+  const [items, setItems] = useState([{ question: '', type: 'TEXT', sortOrder: 1, isRequired: false }]);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
 
@@ -34,6 +34,7 @@ export default function EodTemplateForm() {
               question: item.question,
               type: item.type,
               sortOrder: item.sortOrder,
+              isRequired: item.isRequired || false,
             }))
           );
         })
@@ -43,7 +44,7 @@ export default function EodTemplateForm() {
   }, [id, isEdit]);
 
   function addItem() {
-    setItems((prev) => [...prev, { question: '', type: 'TEXT', sortOrder: prev.length + 1 }]);
+    setItems((prev) => [...prev, { question: '', type: 'TEXT', sortOrder: prev.length + 1, isRequired: false }]);
   }
 
   function removeItem(idx) {
@@ -148,15 +149,26 @@ export default function EodTemplateForm() {
                     placeholder="Question..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
                   />
-                  <select
-                    value={item.type}
-                    onChange={(e) => updateItem(idx, 'type', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
-                  >
-                    {ITEM_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
-                    ))}
-                  </select>
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={item.type}
+                      onChange={(e) => updateItem(idx, 'type', e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+                    >
+                      {ITEM_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                    <label className="flex items-center gap-1.5 cursor-pointer whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={item.isRequired}
+                        onChange={(e) => updateItem(idx, 'isRequired', e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                      />
+                      <span className="text-xs font-medium text-gray-600">Required</span>
+                    </label>
+                  </div>
                 </div>
                 {items.length > 1 && (
                   <button

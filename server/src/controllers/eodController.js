@@ -57,6 +57,7 @@ async function createTemplate(req, res, next) {
             question: item.question,
             type: item.type || 'TEXT',
             sortOrder: item.sortOrder ?? idx + 1,
+            isRequired: item.isRequired ?? false,
           })),
         },
       },
@@ -100,6 +101,7 @@ async function updateTemplate(req, res, next) {
                 question: item.question,
                 type: item.type || 'TEXT',
                 sortOrder: item.sortOrder ?? idx + 1,
+                isRequired: item.isRequired ?? false,
               })),
             },
           }),
@@ -119,7 +121,27 @@ async function updateTemplate(req, res, next) {
 
 async function submitEod(req, res, next) {
   try {
-    const { templateId, responses, notes, mood } = req.body;
+    const { templateId, responses, notes, mood, employeeId } = req.body;
+
+    // On-behalf submission: only ADMIN/SUPERVISOR can submit for others
+    let targetEmployeeId = req.user.id;
+    let submittedById = null;
+    if (employeeId && employeeId !== req.user.id) {
+      if (req.user.role === 'EMPLOYEE') {
+        return res.status(403).json({ error: 'Employees cannot submit EOD on behalf of others.' });
+      }
+      if (req.user.role === 'SUPERVISOR') {
+        const subordinates = await prisma.user.findMany({
+          where: { supervisorId: req.user.id },
+          select: { id: true },
+        });
+        if (!subordinates.some((s) => s.id === employeeId)) {
+          return res.status(403).json({ error: 'Can only submit EOD for your employees.' });
+        }
+      }
+      targetEmployeeId = employeeId;
+      submittedById = req.user.id;
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -127,7 +149,8 @@ async function submitEod(req, res, next) {
     const submission = await prisma.eodSubmission.create({
       data: {
         templateId,
-        employeeId: req.user.id,
+        employeeId: targetEmployeeId,
+        submittedById,
         date: today,
         submittedAt: new Date(),
         notes: notes || null,

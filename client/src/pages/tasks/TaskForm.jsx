@@ -6,8 +6,6 @@ import { toInputDate } from '../../utils/formatDate';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
-const CATEGORIES = ['CLEANING', 'EQUIPMENT_MAINTENANCE', 'FRONT_DESK', 'CLASSES', 'SAFETY', 'OTHER'];
-
 export default function TaskForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -15,6 +13,8 @@ export default function TaskForm() {
   const navigate = useNavigate();
 
   const [users, setUsers] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [newCategory, setNewCategory] = useState('');
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -27,11 +27,17 @@ export default function TaskForm() {
     assignedToId: '',
   });
 
+  const canManageCategories = user.role === 'ADMIN' || user.role === 'SUPERVISOR';
+
   useEffect(() => {
-    api.get('/api/users').then((res) => {
-      setUsers(res.data.users);
-      if (!isEdit && res.data.users.length > 0 && !form.assignedToId) {
-        setForm((f) => ({ ...f, assignedToId: res.data.users[0].id }));
+    Promise.all([
+      api.get('/api/users'),
+      api.get('/api/task-categories'),
+    ]).then(([usersRes, catRes]) => {
+      setUsers(usersRes.data.users);
+      setCategories(catRes.data.categories);
+      if (!isEdit && usersRes.data.users.length > 0 && !form.assignedToId) {
+        setForm((f) => ({ ...f, assignedToId: usersRes.data.users[0].id }));
       }
     });
 
@@ -53,6 +59,21 @@ export default function TaskForm() {
         .finally(() => setLoading(false));
     }
   }, [id, isEdit]);
+
+  async function handleAddCategory() {
+    if (!newCategory.trim()) return;
+    try {
+      await api.post('/api/task-categories', { name: newCategory.trim() });
+      const catRes = await api.get('/api/task-categories');
+      setCategories(catRes.data.categories);
+      const addedName = newCategory.trim().toUpperCase().replace(/\s+/g, '_');
+      setForm((f) => ({ ...f, category: addedName }));
+      setNewCategory('');
+      toast.success('Category added');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to add category');
+    }
+  }
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -126,10 +147,29 @@ export default function TaskForm() {
               onChange={handleChange}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
             >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>
+              {categories.map((c) => (
+                <option key={c.name} value={c.name}>{c.name.replace(/_/g, ' ')}</option>
               ))}
             </select>
+            {canManageCategories && (
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="text"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="New category name..."
+                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCategory())}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCategory}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700"
+                >
+                  Add
+                </button>
+              </div>
+            )}
           </div>
 
           <div>

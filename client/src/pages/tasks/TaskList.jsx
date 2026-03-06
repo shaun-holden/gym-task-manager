@@ -9,13 +9,12 @@ import Modal from '../../components/common/Modal';
 import { formatDate, formatDateTime, isOverdue } from '../../utils/formatDate';
 import toast from 'react-hot-toast';
 
-const CATEGORIES = ['', 'CLEANING', 'EQUIPMENT_MAINTENANCE', 'FRONT_DESK', 'CLASSES', 'SAFETY', 'OTHER'];
-
 export default function TaskList() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [category, setCategory] = useState(searchParams.get('category') || '');
@@ -30,6 +29,7 @@ export default function TaskList() {
     if (user.role !== 'EMPLOYEE') {
       api.get('/api/users').then((res) => setUsers(res.data.users));
     }
+    api.get('/api/task-categories').then((res) => setCategories(res.data.categories));
     const interval = setInterval(fetchTasks, 30000);
     return () => clearInterval(interval);
   }, [category, status, assignee]);
@@ -117,8 +117,8 @@ export default function TaskList() {
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
         >
           <option value="">All Categories</option>
-          {CATEGORIES.filter(Boolean).map((c) => (
-            <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>
+          {categories.map((c) => (
+            <option key={c.name} value={c.name}>{c.name.replace(/_/g, ' ')}</option>
           ))}
         </select>
 

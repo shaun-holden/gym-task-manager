@@ -41,27 +41,41 @@ export default function EodForm() {
   const [mood, setMood] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(user.id);
+  const canSubmitOnBehalf = user.role === 'ADMIN' || user.role === 'SUPERVISOR';
 
   useEffect(() => {
     async function load() {
       try {
-        const [templatesRes, submissionsRes] = await Promise.all([
+        const fetches = [
           api.get('/api/eod/templates'),
           api.get('/api/eod/submissions', {
-            params: { date: new Date().toISOString().split('T')[0], employeeId: user.id },
+            params: { date: new Date().toISOString().split('T')[0], employeeId: selectedEmployeeId },
           }),
-        ]);
+        ];
+        if (canSubmitOnBehalf) {
+          fetches.push(api.get('/api/users'));
+        }
+        const results = await Promise.all(fetches);
 
-        const tmpl = templatesRes.data.templates;
+        const tmpl = results[0].data.templates;
         setTemplates(tmpl);
 
-        if (submissionsRes.data.submissions.length > 0) {
-          const sub = submissionsRes.data.submissions[0];
+        if (canSubmitOnBehalf && results[2]) {
+          setEmployees(results[2].data.users.filter((u) => u.isActive));
+        }
+
+        if (results[1].data.submissions.length > 0) {
+          const sub = results[1].data.submissions[0];
           const fullRes = await api.get(`/api/eod/submissions/${sub.id}`);
           setExistingSubmission(fullRes.data.submission);
-        } else if (tmpl.length > 0) {
-          setSelectedTemplate(tmpl[0]);
-          initResponses(tmpl[0]);
+        } else {
+          setExistingSubmission(null);
+          if (tmpl.length > 0) {
+            setSelectedTemplate(tmpl[0]);
+            initResponses(tmpl[0]);
+          }
         }
       } catch (err) {
         toast.error('Failed to load EOD data');
@@ -70,7 +84,7 @@ export default function EodForm() {
       }
     }
     load();
-  }, [user.id]);
+  }, [user.id, selectedEmployeeId]);
 
   function initResponses(tmpl) {
     const initial = {};
@@ -90,6 +104,16 @@ export default function EodForm() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+
+    // Validate required fields
+    const missingRequired = selectedTemplate.items
+      .filter((item) => item.isRequired && !responses[item.id]?.trim?.() && responses[item.id] !== 'true')
+      .map((item) => item.question);
+    if (missingRequired.length > 0) {
+      toast.error(`Please fill in required fields: ${missingRequired.join(', ')}`);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const responseArray = Object.entries(responses).map(([templateItemId, response]) => ({
@@ -99,12 +123,13 @@ export default function EodForm() {
 
       await api.post('/api/eod/submissions', {
         templateId: selectedTemplate.id,
+        employeeId: selectedEmployeeId !== user.id ? selectedEmployeeId : undefined,
         responses: responseArray,
         notes: notes || undefined,
         mood: mood || undefined,
       });
 
-      toast.success('EOD submitted successfully!');
+      toast.success(selectedEmployeeId !== user.id ? 'EOD submitted on behalf of employee!' : 'EOD submitted successfully!');
       navigate('/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to submit EOD');
@@ -222,6 +247,27 @@ export default function EodForm() {
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Complete Today's EOD</h1>
 
+      {canSubmitOnBehalf && employees.length > 0 && (
+        <div className="mb-4 bg-white rounded-xl border p-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Submit on behalf of</label>
+          <select
+            value={selectedEmployeeId}
+            onChange={(e) => {
+              setSelectedEmployeeId(e.target.value);
+              setExistingSubmission(null);
+              setSelectedTemplate(null);
+              setLoading(true);
+            }}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+          >
+            <option value={user.id}>Myself ({user.name})</option>
+            {employees.filter((e) => e.id !== user.id).map((emp) => (
+              <option key={emp.id} value={emp.id}>{emp.name} ({emp.role})</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {templates.length > 1 && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Select Template</label>
@@ -272,6 +318,7 @@ export default function EodForm() {
               <div key={item.id}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {item.question}
+                  {item.isRequired && <span className="text-red-500 ml-1">*</span>}
                 </label>
 
                 {item.type === 'TEXT' && (

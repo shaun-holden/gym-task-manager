@@ -21,7 +21,8 @@ router.post(
     body('title').trim().notEmpty().withMessage('Title is required.'),
     body('items').isArray({ min: 1 }).withMessage('At least one item is required.'),
     body('items.*.question').trim().notEmpty().withMessage('Question is required.'),
-    body('items.*.type').optional().isIn(['TEXT', 'CHECKBOX', 'NUMBER', 'RATING']).withMessage('Invalid item type.'),
+    body('items.*.type').optional().isIn(['TEXT', 'CHECKBOX', 'NUMBER', 'RATING', 'DATE', 'ATTACHMENT']).withMessage('Invalid item type.'),
+    body('items.*.isRequired').optional().isBoolean().withMessage('isRequired must be a boolean.'),
   ],
   validate,
   createTemplate
@@ -39,6 +40,7 @@ router.post(
   '/submissions',
   [
     body('templateId').isUUID().withMessage('Valid template is required.'),
+    body('employeeId').optional().isUUID().withMessage('Valid employee ID is required.'),
     body('responses').isArray({ min: 1 }).withMessage('At least one response is required.'),
     body('responses.*.templateItemId').isUUID().withMessage('Valid template item is required.'),
     body('responses.*.response').exists().withMessage('Response is required.'),

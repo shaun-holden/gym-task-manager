@@ -12,7 +12,7 @@ router.use(authenticate);
 
 const taskValidation = [
   body('title').trim().notEmpty().withMessage('Title is required.'),
-  body('category').isIn(['CLEANING', 'EQUIPMENT_MAINTENANCE', 'FRONT_DESK', 'CLASSES', 'SAFETY', 'OTHER']).withMessage('Invalid category.'),
+  body('category').trim().notEmpty().withMessage('Category is required.'),
   body('assignedToId').isUUID().withMessage('Valid assignee is required.'),
   body('startDate').optional({ nullable: true }).isISO8601().withMessage('Invalid start date.'),
   body('dueDate').optional({ nullable: true }).isISO8601().withMessage('Invalid due date.'),

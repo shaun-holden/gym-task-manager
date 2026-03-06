@@ -169,6 +169,8 @@ async function deleteUser(req, res, next) {
       prisma.task.deleteMany({ where: { assignedToId: req.params.id } }),
       prisma.task.deleteMany({ where: { createdById: req.params.id } }),
       prisma.resource.deleteMany({ where: { createdById: req.params.id } }),
+      prisma.taskCategoryCustom.deleteMany({ where: { createdById: req.params.id } }),
+      prisma.eodSubmission.updateMany({ where: { submittedById: req.params.id }, data: { submittedById: null } }),
       prisma.user.delete({ where: { id: req.params.id } }),
     ]);
 

@@ -13,15 +13,6 @@ enum Role {
   EMPLOYEE
 }
 
-enum TaskCategory {
-  CLEANING
-  EQUIPMENT_MAINTENANCE
-  FRONT_DESK
-  CLASSES
-  SAFETY
-  OTHER
-}
-
 enum EodItemType {
   TEXT
   CHECKBOX
@@ -45,10 +36,11 @@ model Organization {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  users         User[]
-  tasks         Task[]
-  eodTemplates  EodTemplate[]
-  resources     Resource[]
+  users          User[]
+  tasks          Task[]
+  eodTemplates   EodTemplate[]
+  resources      Resource[]
+  taskCategories TaskCategoryCustom[]
 
   @@map("organizations")
 }
@@ -71,10 +63,12 @@ model User {
 
   assignedTasks    Task[] @relation("TaskAssignee")
   createdTasks     Task[] @relation("TaskCreator")
-  eodSubmissions   EodSubmission[]
+  eodSubmissions   EodSubmission[] @relation("EodEmployee")
+  eodSubmittedFor  EodSubmission[] @relation("EodSubmitter")
   createdTemplates EodTemplate[]
   notifications    Notification[]
   resources        Resource[]
+  taskCategories   TaskCategoryCustom[]
 
   @@map("users")
 }
@@ -83,7 +77,7 @@ model Task {
   id             String       @id @default(uuid())
   title          String
   description    String?
-  category       TaskCategory @default(OTHER)
+  category       String       @default("OTHER")
   startDate      DateTime?    @map("start_date")
   dueDate        DateTime?    @map("due_date")
   isCompleted    Boolean      @default(false) @map("is_completed")
@@ -125,6 +119,7 @@ model EodTemplateItem {
   question   String
   sortOrder  Int         @default(0) @map("sort_order")
   type       EodItemType @default(TEXT)
+  isRequired Boolean     @default(false) @map("is_required")
 
   template  EodTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
   responses EodResponse[]
@@ -133,18 +128,20 @@ model EodTemplateItem {
 }
 
 model EodSubmission {
-  id          String    @id @default(uuid())
-  templateId  String    @map("template_id")
-  employeeId  String    @map("employee_id")
-  date        DateTime  @db.Date
-  submittedAt DateTime? @map("submitted_at")
-  notes       String?
-  mood        Int?
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id            String    @id @default(uuid())
+  templateId    String    @map("template_id")
+  employeeId    String    @map("employee_id")
+  submittedById String?   @map("submitted_by_id")
+  date          DateTime  @db.Date
+  submittedAt   DateTime? @map("submitted_at")
+  notes         String?
+  mood          Int?
+  createdAt     DateTime  @default(now()) @map("created_at")
 
-  template  EodTemplate   @relation(fields: [templateId], references: [id])
-  employee  User          @relation(fields: [employeeId], references: [id])
-  responses EodResponse[]
+  template    EodTemplate   @relation(fields: [templateId], references: [id])
+  employee    User          @relation("EodEmployee", fields: [employeeId], references: [id])
+  submittedBy User?         @relation("EodSubmitter", fields: [submittedById], references: [id])
+  responses   EodResponse[]
 
   @@unique([templateId, employeeId, date])
   @@map("eod_submissions")
@@ -178,6 +175,19 @@ model Resource {
   createdBy    User          @relation(fields: [createdById], references: [id])
 
   @@map("resources")
+}
+
+model TaskCategoryCustom {
+  id             String   @id @default(uuid())
+  name           String
+  organizationId String?  @map("organization_id")
+  createdById    String   @map("created_by_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  createdBy    User          @relation(fields: [createdById], references: [id])
+
+  @@map("task_categories")
 }
 
 model Notification {
