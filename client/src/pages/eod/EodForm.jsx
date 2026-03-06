@@ -201,17 +201,34 @@ export default function EodForm() {
                   <p className="text-sm text-gray-600">{r.response || '—'}</p>
                 ) : r.templateItem?.type === 'ATTACHMENT' ? (
                   r.response ? (
-                    <a
-                      href={r.response}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                      View Attachment
-                    </a>
+                    r.response.startsWith('data:') ? (
+                      r.response.startsWith('data:image') ? (
+                        <img src={r.response} alt="Attachment" className="max-w-xs max-h-48 rounded-lg border" />
+                      ) : (
+                        <a
+                          href={r.response}
+                          download="attachment"
+                          className="inline-flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Download Attachment
+                        </a>
+                      )
+                    ) : (
+                      <a
+                        href={r.response}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        View Attachment
+                      </a>
+                    )
                   ) : (
                     <span className="text-sm text-gray-400">No attachment</span>
                   )
@@ -398,16 +415,53 @@ export default function EodForm() {
                 )}
 
                 {item.type === 'ATTACHMENT' && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
+                    {/* File upload */}
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-400 hover:bg-brand-50 transition-colors">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Choose file</span>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                setResponses((r) => ({ ...r, [item.id]: reader.result }));
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+                      {responses[item.id]?.startsWith('data:') && (
+                        <span className="text-sm text-green-600 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          File attached
+                        </span>
+                      )}
+                    </div>
+                    {/* Or paste a link */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400 uppercase font-medium">or</span>
+                      <div className="flex-1 h-px bg-gray-200" />
+                    </div>
                     <input
                       type="url"
-                      value={responses[item.id] || ''}
+                      value={responses[item.id]?.startsWith('data:') ? '' : (responses[item.id] || '')}
                       onChange={(e) => setResponses((r) => ({ ...r, [item.id]: e.target.value }))}
                       placeholder="Paste a link to a document, photo, or file..."
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
                     />
                     <p className="text-xs text-gray-400">
-                      Paste a link to a Google Drive file, Dropbox, photo URL, or any shared document.
+                      Upload a file or paste a link to Google Drive, Dropbox, or any shared document.
                     </p>
                   </div>
                 )}
