@@ -6,6 +6,30 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { formatDateTime } from '../../utils/formatDate';
 import toast from 'react-hot-toast';
 
+const MOOD_OPTIONS = [
+  { value: 1, label: 'Rough Day', icon: '1' },
+  { value: 2, label: 'Below Average', icon: '2' },
+  { value: 3, label: 'Average', icon: '3' },
+  { value: 4, label: 'Good Day', icon: '4' },
+  { value: 5, label: 'Great Day', icon: '5' },
+];
+
+const MOOD_COLORS = {
+  1: 'bg-red-100 border-red-400 text-red-700',
+  2: 'bg-orange-100 border-orange-400 text-orange-700',
+  3: 'bg-yellow-100 border-yellow-400 text-yellow-700',
+  4: 'bg-green-100 border-green-400 text-green-700',
+  5: 'bg-emerald-100 border-emerald-400 text-emerald-700',
+};
+
+const MOOD_COLORS_SELECTED = {
+  1: 'bg-red-500 border-red-500 text-white',
+  2: 'bg-orange-500 border-orange-500 text-white',
+  3: 'bg-yellow-500 border-yellow-500 text-white',
+  4: 'bg-green-500 border-green-500 text-white',
+  5: 'bg-emerald-500 border-emerald-500 text-white',
+};
+
 export default function EodForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -13,6 +37,8 @@ export default function EodForm() {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [existingSubmission, setExistingSubmission] = useState(null);
   const [responses, setResponses] = useState({});
+  const [notes, setNotes] = useState('');
+  const [mood, setMood] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -30,18 +56,12 @@ export default function EodForm() {
         setTemplates(tmpl);
 
         if (submissionsRes.data.submissions.length > 0) {
-          // Already submitted — load the full submission
           const sub = submissionsRes.data.submissions[0];
           const fullRes = await api.get(`/api/eod/submissions/${sub.id}`);
           setExistingSubmission(fullRes.data.submission);
         } else if (tmpl.length > 0) {
           setSelectedTemplate(tmpl[0]);
-          // Init empty responses
-          const initial = {};
-          tmpl[0].items.forEach((item) => {
-            initial[item.id] = item.type === 'CHECKBOX' ? 'false' : '';
-          });
-          setResponses(initial);
+          initResponses(tmpl[0]);
         }
       } catch (err) {
         toast.error('Failed to load EOD data');
@@ -52,14 +72,20 @@ export default function EodForm() {
     load();
   }, [user.id]);
 
+  function initResponses(tmpl) {
+    const initial = {};
+    tmpl.items.forEach((item) => {
+      if (item.type === 'CHECKBOX') initial[item.id] = 'false';
+      else if (item.type === 'RATING') initial[item.id] = '';
+      else initial[item.id] = '';
+    });
+    setResponses(initial);
+  }
+
   function handleTemplateChange(templateId) {
     const tmpl = templates.find((t) => t.id === templateId);
     setSelectedTemplate(tmpl);
-    const initial = {};
-    tmpl.items.forEach((item) => {
-      initial[item.id] = item.type === 'CHECKBOX' ? 'false' : '';
-    });
-    setResponses(initial);
+    initResponses(tmpl);
   }
 
   async function handleSubmit(e) {
@@ -74,6 +100,8 @@ export default function EodForm() {
       await api.post('/api/eod/submissions', {
         templateId: selectedTemplate.id,
         responses: responseArray,
+        notes: notes || undefined,
+        mood: mood || undefined,
       });
 
       toast.success('EOD submitted successfully!');
@@ -95,19 +123,70 @@ export default function EodForm() {
         <p className="text-sm text-green-600 mb-6">
           Submitted at {formatDateTime(existingSubmission.submittedAt)}
         </p>
+
+        {/* Mood display */}
+        {existingSubmission.mood && (
+          <div className="bg-white rounded-xl border p-4 mb-4 flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-700">How was your day?</span>
+            <div className="flex gap-1.5">
+              {MOOD_OPTIONS.map((m) => (
+                <span
+                  key={m.value}
+                  className={`w-9 h-9 rounded-full border-2 flex items-center justify-center text-sm font-bold ${
+                    existingSubmission.mood === m.value
+                      ? MOOD_COLORS_SELECTED[m.value]
+                      : 'bg-gray-50 border-gray-200 text-gray-300'
+                  }`}
+                  title={m.label}
+                >
+                  {m.icon}
+                </span>
+              ))}
+            </div>
+            <span className="text-sm text-gray-500">
+              {MOOD_OPTIONS.find((m) => m.value === existingSubmission.mood)?.label}
+            </span>
+          </div>
+        )}
+
         <div className="bg-white rounded-xl border p-6 space-y-4">
           <h2 className="text-lg font-semibold">{existingSubmission.template?.title}</h2>
           {existingSubmission.responses?.map((r) => (
             <div key={r.id} className="border-b pb-3 last:border-b-0">
               <p className="text-sm font-medium text-gray-700">{r.templateItem?.question}</p>
-              <p className="text-sm text-gray-600 mt-1">
-                {r.templateItem?.type === 'CHECKBOX'
-                  ? (r.response === 'true' ? 'Yes' : 'No')
-                  : r.response || '—'}
-              </p>
+              <div className="mt-1">
+                {r.templateItem?.type === 'CHECKBOX' ? (
+                  <span className={`text-sm ${r.response === 'true' ? 'text-green-600' : 'text-red-600'}`}>
+                    {r.response === 'true' ? 'Yes' : 'No'}
+                  </span>
+                ) : r.templateItem?.type === 'RATING' ? (
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg
+                        key={star}
+                        className={`w-5 h-5 ${Number(r.response) >= star ? 'text-yellow-400' : 'text-gray-200'}`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">{r.response || '—'}</p>
+                )}
+              </div>
             </div>
           ))}
         </div>
+
+        {/* Notes display */}
+        {existingSubmission.notes && (
+          <div className="bg-white rounded-xl border p-4 mt-4">
+            <p className="text-sm font-medium text-gray-700 mb-1">Additional Notes</p>
+            <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{existingSubmission.notes}</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -141,48 +220,125 @@ export default function EodForm() {
       )}
 
       {selectedTemplate && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl border p-6 space-y-5">
-          <h2 className="text-lg font-semibold text-gray-900">{selectedTemplate.title}</h2>
-
-          {selectedTemplate.items.map((item) => (
-            <div key={item.id}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {item.question}
-              </label>
-
-              {item.type === 'TEXT' && (
-                <textarea
-                  rows={2}
-                  value={responses[item.id] || ''}
-                  onChange={(e) => setResponses((r) => ({ ...r, [item.id]: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                />
-              )}
-
-              {item.type === 'NUMBER' && (
-                <input
-                  type="number"
-                  value={responses[item.id] || ''}
-                  onChange={(e) => setResponses((r) => ({ ...r, [item.id]: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                />
-              )}
-
-              {item.type === 'CHECKBOX' && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={responses[item.id] === 'true'}
-                    onChange={(e) =>
-                      setResponses((r) => ({ ...r, [item.id]: String(e.target.checked) }))
-                    }
-                    className="h-5 w-5 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-                  />
-                  <span className="text-sm text-gray-600">Yes</span>
-                </label>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Mood Selector */}
+          <div className="bg-white rounded-xl border p-5">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              How was your day?
+            </label>
+            <div className="flex gap-2">
+              {MOOD_OPTIONS.map((m) => (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => setMood(mood === m.value ? null : m.value)}
+                  className={`flex-1 flex flex-col items-center gap-1 py-3 px-2 rounded-lg border-2 transition-all ${
+                    mood === m.value
+                      ? MOOD_COLORS_SELECTED[m.value]
+                      : MOOD_COLORS[m.value] + ' hover:shadow-sm'
+                  }`}
+                  title={m.label}
+                >
+                  <span className="text-lg font-bold">{m.icon}</span>
+                  <span className="text-xs font-medium leading-tight text-center">{m.label}</span>
+                </button>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Template Questions */}
+          <div className="bg-white rounded-xl border p-6 space-y-5">
+            <h2 className="text-lg font-semibold text-gray-900">{selectedTemplate.title}</h2>
+
+            {selectedTemplate.items.map((item) => (
+              <div key={item.id}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {item.question}
+                </label>
+
+                {item.type === 'TEXT' && (
+                  <textarea
+                    rows={2}
+                    value={responses[item.id] || ''}
+                    onChange={(e) => setResponses((r) => ({ ...r, [item.id]: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                  />
+                )}
+
+                {item.type === 'NUMBER' && (
+                  <input
+                    type="number"
+                    value={responses[item.id] || ''}
+                    onChange={(e) => setResponses((r) => ({ ...r, [item.id]: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                  />
+                )}
+
+                {item.type === 'CHECKBOX' && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={responses[item.id] === 'true'}
+                      onChange={(e) =>
+                        setResponses((r) => ({ ...r, [item.id]: String(e.target.checked) }))
+                      }
+                      className="h-5 w-5 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                    />
+                    <span className="text-sm text-gray-600">Yes</span>
+                  </label>
+                )}
+
+                {item.type === 'RATING' && (
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() =>
+                          setResponses((r) => ({
+                            ...r,
+                            [item.id]: String(r[item.id] === String(star) ? '' : star),
+                          }))
+                        }
+                        className="p-0.5 focus:outline-none"
+                      >
+                        <svg
+                          className={`w-8 h-8 transition-colors ${
+                            Number(responses[item.id]) >= star
+                              ? 'text-yellow-400 hover:text-yellow-500'
+                              : 'text-gray-200 hover:text-yellow-300'
+                          }`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      </button>
+                    ))}
+                    {responses[item.id] && (
+                      <span className="ml-2 text-sm text-gray-500 self-center">
+                        {responses[item.id]}/5
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Additional Notes */}
+          <div className="bg-white rounded-xl border p-5">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Additional Notes <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <textarea
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Any extra comments, blockers, or things to note..."
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+            />
+          </div>
 
           <div className="flex justify-end pt-2">
             <button

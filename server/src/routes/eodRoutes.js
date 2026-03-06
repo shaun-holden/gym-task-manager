@@ -21,7 +21,7 @@ router.post(
     body('title').trim().notEmpty().withMessage('Title is required.'),
     body('items').isArray({ min: 1 }).withMessage('At least one item is required.'),
     body('items.*.question').trim().notEmpty().withMessage('Question is required.'),
-    body('items.*.type').optional().isIn(['TEXT', 'CHECKBOX', 'NUMBER']).withMessage('Invalid item type.'),
+    body('items.*.type').optional().isIn(['TEXT', 'CHECKBOX', 'NUMBER', 'RATING']).withMessage('Invalid item type.'),
   ],
   validate,
   createTemplate
@@ -42,6 +42,8 @@ router.post(
     body('responses').isArray({ min: 1 }).withMessage('At least one response is required.'),
     body('responses.*.templateItemId').isUUID().withMessage('Valid template item is required.'),
     body('responses.*.response').exists().withMessage('Response is required.'),
+    body('notes').optional().isString(),
+    body('mood').optional().isInt({ min: 1, max: 5 }).withMessage('Mood must be between 1 and 5.'),
   ],
   validate,
   submitEod

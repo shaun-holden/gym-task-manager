@@ -115,7 +115,7 @@ async function updateTemplate(req, res, next) {
 
 async function submitEod(req, res, next) {
   try {
-    const { templateId, responses } = req.body;
+    const { templateId, responses, notes, mood } = req.body;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -126,6 +126,8 @@ async function submitEod(req, res, next) {
         employeeId: req.user.id,
         date: today,
         submittedAt: new Date(),
+        notes: notes || null,
+        mood: mood != null ? Number(mood) : null,
         responses: {
           create: responses.map((r) => ({
             templateItemId: r.templateItemId,

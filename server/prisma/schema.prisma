@@ -26,6 +26,7 @@ enum EodItemType {
   TEXT
   CHECKBOX
   NUMBER
+  RATING
 }
 
 enum NotificationType {
@@ -112,6 +113,8 @@ model EodSubmission {
   employeeId  String    @map("employee_id")
   date        DateTime  @db.Date
   submittedAt DateTime? @map("submitted_at")
+  notes       String?
+  mood        Int?
   createdAt   DateTime  @default(now()) @map("created_at")
 
   template  EodTemplate   @relation(fields: [templateId], references: [id])

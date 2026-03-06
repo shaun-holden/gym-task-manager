@@ -5,6 +5,15 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { formatDate, formatDateTime } from '../../utils/formatDate';
 import toast from 'react-hot-toast';
 
+const MOOD_LABELS = { 1: 'Rough Day', 2: 'Below Average', 3: 'Average', 4: 'Good Day', 5: 'Great Day' };
+const MOOD_COLORS = {
+  1: 'bg-red-500 text-white',
+  2: 'bg-orange-500 text-white',
+  3: 'bg-yellow-500 text-white',
+  4: 'bg-green-500 text-white',
+  5: 'bg-emerald-500 text-white',
+};
+
 export default function EodSubmissionDetail() {
   const { id } = useParams();
   const [submission, setSubmission] = useState(null);
@@ -23,7 +32,7 @@ export default function EodSubmissionDetail() {
   return (
     <div className="max-w-2xl mx-auto">
       <Link to="/eod/submissions" className="text-sm text-gray-500 hover:text-brand-600 mb-6 inline-block">
-        ← Submissions
+        &larr; Submissions
       </Link>
 
       <div className="bg-white rounded-xl border p-6">
@@ -37,6 +46,28 @@ export default function EodSubmissionDetail() {
             )}
           </div>
         </div>
+
+        {/* Mood */}
+        {submission.mood && (
+          <div className="flex items-center gap-3 mb-6 p-3 bg-gray-50 rounded-lg">
+            <span className="text-sm font-medium text-gray-700">Mood:</span>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((v) => (
+                <span
+                  key={v}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
+                    submission.mood === v
+                      ? MOOD_COLORS[v]
+                      : 'bg-gray-100 border-gray-200 text-gray-300'
+                  }`}
+                >
+                  {v}
+                </span>
+              ))}
+            </div>
+            <span className="text-sm text-gray-600">{MOOD_LABELS[submission.mood]}</span>
+          </div>
+        )}
 
         <div className="space-y-4">
           {submission.responses?.map((r) => (
@@ -56,6 +87,20 @@ export default function EodSubmissionDetail() {
                     )}
                     {r.response === 'true' ? 'Yes' : 'No'}
                   </span>
+                ) : r.templateItem?.type === 'RATING' ? (
+                  <div className="flex gap-1 items-center">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg
+                        key={star}
+                        className={`w-5 h-5 ${Number(r.response) >= star ? 'text-yellow-400' : 'text-gray-200'}`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                    <span className="ml-1 text-sm text-gray-500">{r.response}/5</span>
+                  </div>
                 ) : (
                   <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-2">{r.response || '—'}</p>
                 )}
@@ -63,6 +108,14 @@ export default function EodSubmissionDetail() {
             </div>
           ))}
         </div>
+
+        {/* Notes */}
+        {submission.notes && (
+          <div className="mt-6 pt-4 border-t">
+            <p className="text-sm font-medium text-gray-700 mb-1">Additional Notes</p>
+            <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{submission.notes}</p>
+          </div>
+        )}
       </div>
     </div>
   );

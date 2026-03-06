@@ -4,7 +4,7 @@ import api from '../../utils/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import toast from 'react-hot-toast';
 
-const ITEM_TYPES = ['TEXT', 'CHECKBOX', 'NUMBER'];
+const ITEM_TYPES = ['TEXT', 'CHECKBOX', 'NUMBER', 'RATING'];
 
 export default function EodTemplateForm() {
   const { id } = useParams();
