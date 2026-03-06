@@ -27,6 +27,8 @@ enum EodItemType {
   CHECKBOX
   NUMBER
   RATING
+  DATE
+  ATTACHMENT
 }
 
 enum NotificationType {

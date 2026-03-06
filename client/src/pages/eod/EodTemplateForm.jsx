@@ -4,7 +4,14 @@ import api from '../../utils/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import toast from 'react-hot-toast';
 
-const ITEM_TYPES = ['TEXT', 'CHECKBOX', 'NUMBER', 'RATING'];
+const ITEM_TYPES = [
+  { value: 'TEXT', label: 'Text' },
+  { value: 'CHECKBOX', label: 'Checkbox (Yes/No)' },
+  { value: 'NUMBER', label: 'Number' },
+  { value: 'RATING', label: 'Rating (1-5 Stars)' },
+  { value: 'DATE', label: 'Date' },
+  { value: 'ATTACHMENT', label: 'Attachment (File/Link)' },
+];
 
 export default function EodTemplateForm() {
   const { id } = useParams();
@@ -147,7 +154,7 @@ export default function EodTemplateForm() {
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"
                   >
                     {ITEM_TYPES.map((t) => (
-                      <option key={t} value={t}>{t}</option>
+                      <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
                   </select>
                 </div>

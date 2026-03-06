@@ -1,0 +1,3 @@
+-- Add DATE and ATTACHMENT to EodItemType enum
+ALTER TYPE "EodItemType" ADD VALUE 'DATE';
+ALTER TYPE "EodItemType" ADD VALUE 'ATTACHMENT';

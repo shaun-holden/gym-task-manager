@@ -76,7 +76,7 @@ export default function EodForm() {
     const initial = {};
     tmpl.items.forEach((item) => {
       if (item.type === 'CHECKBOX') initial[item.id] = 'false';
-      else if (item.type === 'RATING') initial[item.id] = '';
+      else if (item.type === 'DATE') initial[item.id] = new Date().toISOString().split('T')[0];
       else initial[item.id] = '';
     });
     setResponses(initial);
@@ -172,6 +172,24 @@ export default function EodForm() {
                       </svg>
                     ))}
                   </div>
+                ) : r.templateItem?.type === 'DATE' ? (
+                  <p className="text-sm text-gray-600">{r.response || '—'}</p>
+                ) : r.templateItem?.type === 'ATTACHMENT' ? (
+                  r.response ? (
+                    <a
+                      href={r.response}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                      View Attachment
+                    </a>
+                  ) : (
+                    <span className="text-sm text-gray-400">No attachment</span>
+                  )
                 ) : (
                   <p className="text-sm text-gray-600">{r.response || '—'}</p>
                 )}
@@ -320,6 +338,30 @@ export default function EodForm() {
                         {responses[item.id]}/5
                       </span>
                     )}
+                  </div>
+                )}
+
+                {item.type === 'DATE' && (
+                  <input
+                    type="date"
+                    value={responses[item.id] || ''}
+                    onChange={(e) => setResponses((r) => ({ ...r, [item.id]: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                  />
+                )}
+
+                {item.type === 'ATTACHMENT' && (
+                  <div className="space-y-2">
+                    <input
+                      type="url"
+                      value={responses[item.id] || ''}
+                      onChange={(e) => setResponses((r) => ({ ...r, [item.id]: e.target.value }))}
+                      placeholder="Paste a link to a document, photo, or file..."
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                    />
+                    <p className="text-xs text-gray-400">
+                      Paste a link to a Google Drive file, Dropbox, photo URL, or any shared document.
+                    </p>
                   </div>
                 )}
               </div>
