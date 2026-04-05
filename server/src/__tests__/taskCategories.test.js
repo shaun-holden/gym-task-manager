@@ -22,7 +22,7 @@ const mockCategory = {
 };
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  jest.resetAllMocks();
   prisma.user.findUnique.mockResolvedValue(adminUser);
 });
 

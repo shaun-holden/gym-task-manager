@@ -29,7 +29,7 @@ const mockTask = {
 };
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  jest.resetAllMocks();
   // Default: authenticate middleware finds the user
   prisma.user.findUnique.mockResolvedValue(adminUser);
 });

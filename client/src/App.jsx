@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAuth } from './hooks/useAuth';
 import Navbar from './components/layout/Navbar';
 import LoadingSpinner from './components/common/LoadingSpinner';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Pages
 import Login from './pages/Login';
@@ -47,6 +48,7 @@ export default function App() {
       <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
       <Navbar />
       <AuthedUrgentPopup />
+      <ErrorBoundary>
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Routes>
           {/* Public */}
@@ -118,6 +120,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

@@ -31,6 +31,7 @@ jest.mock('../utils/prisma', () => {
       update: jest.fn(),
       delete: jest.fn(),
       deleteMany: jest.fn(),
+      count: jest.fn(),
     },
     eodTemplate: {
       findUnique: jest.fn(),
@@ -51,6 +52,7 @@ jest.mock('../utils/prisma', () => {
       update: jest.fn(),
       deleteMany: jest.fn(),
       updateMany: jest.fn(),
+      count: jest.fn(),
     },
     eodResponse: {
       deleteMany: jest.fn(),
@@ -63,6 +65,7 @@ jest.mock('../utils/prisma', () => {
       update: jest.fn(),
       delete: jest.fn(),
       deleteMany: jest.fn(),
+      count: jest.fn(),
     },
     resource: {
       findUnique: jest.fn(),

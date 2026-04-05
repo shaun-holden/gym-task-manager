@@ -1,5 +1,6 @@
 const prisma = require('../utils/prisma');
 const { createNotification } = require('../utils/notify');
+const { parsePagination } = require('../utils/pagination');
 
 async function getTeamUserIds(userId, role) {
   if (role === 'ADMIN') return null; // null = no filter
@@ -44,16 +45,23 @@ async function getTasks(req, res, next) {
       if (endDate) where.dueDate.lte = new Date(endDate);
     }
 
-    const tasks = await prisma.task.findMany({
-      where,
-      include: {
-        assignedTo: { select: { id: true, name: true } },
-        createdBy: { select: { id: true, name: true } },
-      },
-      orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
-    });
+    const { page, limit, skip } = parsePagination(req.query);
 
-    res.json({ tasks });
+    const [tasks, total] = await Promise.all([
+      prisma.task.findMany({
+        where,
+        include: {
+          assignedTo: { select: { id: true, name: true } },
+          createdBy: { select: { id: true, name: true } },
+        },
+        orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+      prisma.task.count({ where }),
+    ]);
+
+    res.json({ tasks, page, limit, total, totalPages: Math.ceil(total / limit) });
   } catch (err) {
     next(err);
   }

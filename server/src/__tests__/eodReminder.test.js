@@ -22,7 +22,7 @@ describe('eodReminder', () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     io = {};
     cron.schedule.mockImplementation((expr, cb) => { cronCallback = cb; });
     sendEmail.mockResolvedValue(null);

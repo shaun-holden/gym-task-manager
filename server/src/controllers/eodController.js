@@ -1,5 +1,6 @@
 const prisma = require('../utils/prisma');
 const { createNotification } = require('../utils/notify');
+const { parsePagination } = require('../utils/pagination');
 
 async function getTemplates(req, res, next) {
   try {
@@ -239,16 +240,23 @@ async function getSubmissions(req, res, next) {
       if (endDate) where.date.lte = new Date(endDate);
     }
 
-    const submissions = await prisma.eodSubmission.findMany({
-      where,
-      include: {
-        employee: { select: { id: true, name: true } },
-        template: { select: { id: true, title: true } },
-      },
-      orderBy: [{ date: 'desc' }, { submittedAt: 'desc' }],
-    });
+    const { page, limit, skip } = parsePagination(req.query);
 
-    res.json({ submissions });
+    const [submissions, total] = await Promise.all([
+      prisma.eodSubmission.findMany({
+        where,
+        include: {
+          employee: { select: { id: true, name: true } },
+          template: { select: { id: true, title: true } },
+        },
+        orderBy: [{ date: 'desc' }, { submittedAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+      prisma.eodSubmission.count({ where }),
+    ]);
+
+    res.json({ submissions, page, limit, total, totalPages: Math.ceil(total / limit) });
   } catch (err) {
     next(err);
   }

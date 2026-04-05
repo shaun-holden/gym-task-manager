@@ -3,7 +3,7 @@ const app = require('../app');
 const prisma = require('../utils/prisma');
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  jest.resetAllMocks();
 });
 
 describe('Auth Routes', () => {

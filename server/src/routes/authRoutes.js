@@ -1,11 +1,20 @@
 const { Router } = require('express');
 const { body } = require('express-validator');
+const rateLimit = require('express-rate-limit');
 const validate = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
 const prisma = require('../utils/prisma');
 const { register, login, getMe } = require('../controllers/authController');
 
 const router = Router();
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 attempts per window
+  message: { error: 'Too many attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Public: search organizations for registration
 router.get('/organizations', async (req, res) => {
@@ -25,6 +34,7 @@ router.get('/organizations', async (req, res) => {
 
 router.post(
   '/register',
+  authLimiter,
   [
     body('name').trim().notEmpty().withMessage('Name is required.'),
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required.'),
@@ -36,6 +46,7 @@ router.post(
 
 router.post(
   '/login',
+  authLimiter,
   [
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required.'),
     body('password').notEmpty().withMessage('Password is required.'),

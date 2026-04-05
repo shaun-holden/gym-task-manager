@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const errorHandler = require('./middleware/errorHandler');
 const authRoutes = require('./routes/authRoutes');
 const taskRoutes = require('./routes/taskRoutes');
@@ -12,6 +13,7 @@ const taskCategoryRoutes = require('./routes/taskCategoryRoutes');
 
 const app = express();
 
+app.use(helmet());
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
@@ -20,7 +22,8 @@ app.use(express.json());
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-// One-time seed endpoint (protected by secret)
+// One-time seed endpoint (protected by secret, disabled in production)
+if (process.env.NODE_ENV !== 'production') {
 app.post('/api/seed', async (req, res) => {
   const { secret } = req.body;
   if (secret !== process.env.JWT_SECRET) {
@@ -47,6 +50,7 @@ app.post('/api/seed', async (req, res) => {
     res.json({ message: 'Seeded', users: [admin.email, supervisor.email, employee.email], template: template.title });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+}
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);

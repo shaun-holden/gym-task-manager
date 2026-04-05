@@ -1,5 +1,6 @@
 const prisma = require('../utils/prisma');
 const { createNotification } = require('../utils/notify');
+const { parsePagination } = require('../utils/pagination');
 
 async function getNotifications(req, res, next) {
   try {
@@ -10,13 +11,19 @@ async function getNotifications(req, res, next) {
       where.isRead = false;
     }
 
-    const notifications = await prisma.notification.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-    });
+    const { page, limit, skip } = parsePagination(req.query);
 
-    res.json({ notifications });
+    const [notifications, total] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.notification.count({ where }),
+    ]);
+
+    res.json({ notifications, page, limit, total, totalPages: Math.ceil(total / limit) });
   } catch (err) {
     next(err);
   }
