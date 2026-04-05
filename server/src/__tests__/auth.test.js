@@ -86,3 +86,129 @@ describe('Auth Routes', () => {
   });
 
 });
+
+describe('Auth Happy Paths', () => {
+
+  describe('POST /api/auth/register - SUPERVISOR', () => {
+    it('should return 201 when supervisor registers with new org', async () => {
+      prisma.user.findUnique.mockResolvedValue(null); // no existing user
+      prisma.organization.create.mockResolvedValue({ id: 'org-1', name: 'New Gym' });
+      prisma.user.create.mockResolvedValue({
+        id: 'user-1', name: 'Supervisor', email: 'sup@test.com',
+        role: 'SUPERVISOR', organizationId: 'org-1',
+        organization: { id: 'org-1', name: 'New Gym' },
+      });
+
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'Supervisor',
+          email: 'sup@test.com',
+          password: 'password123',
+          role: 'SUPERVISOR',
+          organizationName: 'New Gym',
+        });
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty('token');
+    });
+  });
+
+  describe('POST /api/auth/register - EMPLOYEE', () => {
+    it('should return 201 when employee registers with existing org', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.organization.findUnique.mockResolvedValue({ id: 'org-1', name: 'Existing Gym' });
+      prisma.user.findFirst.mockResolvedValue({ id: 'sup-1' }); // auto-assign supervisor
+      prisma.user.create.mockResolvedValue({
+        id: 'emp-1', name: 'Employee', email: 'emp@test.com',
+        role: 'EMPLOYEE', organizationId: 'org-1',
+        organization: { id: 'org-1', name: 'Existing Gym' },
+      });
+
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'Employee',
+          email: 'emp@test.com',
+          password: 'password123',
+          role: 'EMPLOYEE',
+          organizationId: 'org-1',
+        });
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty('token');
+    });
+
+    it('should return 400 if organization not found', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.organization.findUnique.mockResolvedValue(null);
+
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'Employee',
+          email: 'emp@test.com',
+          password: 'password123',
+          role: 'EMPLOYEE',
+          organizationId: 'nonexistent-org',
+        });
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 409 if email already exists', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'existing-user' });
+
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'Employee',
+          email: 'existing@test.com',
+          password: 'password123',
+          role: 'EMPLOYEE',
+          organizationId: 'org-1',
+        });
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('POST /api/auth/login - happy path', () => {
+    it('should return 200 with token for valid credentials', async () => {
+      const bcrypt = require('bcryptjs');
+      const hashedPassword = await bcrypt.hash('password123', 10);
+
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'user-1',
+        email: 'user@test.com',
+        passwordHash: hashedPassword,
+        isActive: true,
+        role: 'EMPLOYEE',
+        organizationId: 'org-1',
+        organization: { id: 'org-1', name: 'Test Gym' },
+      });
+
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'user@test.com', password: 'password123' });
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('token');
+    });
+
+    it('should return 403 if user is inactive', async () => {
+      const bcrypt = require('bcryptjs');
+      const hashedPassword = await bcrypt.hash('password123', 10);
+
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'user-1',
+        email: 'user@test.com',
+        passwordHash: hashedPassword,
+        isActive: false,
+        role: 'EMPLOYEE',
+        organizationId: 'org-1',
+      });
+
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'user@test.com', password: 'password123' });
+      expect(res.status).toBe(403);
+    });
+  });
+
+});

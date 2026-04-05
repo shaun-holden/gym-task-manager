@@ -27,7 +27,7 @@ const mockUser = {
 };
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  jest.resetAllMocks();
   prisma.user.findUnique.mockResolvedValue(adminUser);
 });
 
@@ -221,6 +221,55 @@ describe('User Routes', () => {
         .delete('/api/users/nonexistent')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(404);
+    });
+  });
+
+});
+
+describe('User Happy Paths', () => {
+
+  describe('PATCH /api/users/:id - happy path', () => {
+    it('should return 200 for ADMIN updating a user', async () => {
+      prisma.user.findUnique
+        .mockResolvedValueOnce(adminUser)
+        .mockResolvedValueOnce(mockUser);
+      prisma.user.update.mockResolvedValue({ ...mockUser, name: 'Updated Name' });
+
+      const res = await request(app)
+        .patch('/api/users/employee-1')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Updated Name' });
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe('PATCH /api/users/:id/archive - happy path', () => {
+    it('should return 200 for ADMIN archiving a user', async () => {
+      prisma.user.findUnique
+        .mockResolvedValueOnce(adminUser)   // authenticate
+        .mockResolvedValueOnce(mockUser);   // archiveUser lookup
+      prisma.user.count.mockResolvedValue(2);
+      prisma.user.update.mockResolvedValue({ ...mockUser, isActive: false });
+
+      const res = await request(app)
+        .patch('/api/users/employee-1/archive')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe('DELETE /api/users/:id - happy path', () => {
+    it('should return 200 for ADMIN deleting a non-admin user', async () => {
+      prisma.user.findUnique
+        .mockResolvedValueOnce(adminUser)
+        .mockResolvedValueOnce(mockUser);
+      prisma.user.findMany.mockResolvedValue([adminUser]); // enough admins remain
+      prisma.$transaction.mockResolvedValue([]);
+
+      const res = await request(app)
+        .delete('/api/users/employee-1')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(200);
     });
   });
 

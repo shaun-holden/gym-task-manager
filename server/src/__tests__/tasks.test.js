@@ -184,3 +184,105 @@ describe('Task Routes', () => {
   });
 
 });
+
+describe('Task Happy Paths', () => {
+
+  describe('PUT /api/tasks/:id', () => {
+    it('should return 401 with no token', async () => {
+      const res = await request(app).put('/api/tasks/task-1').send({ title: 'Updated' });
+      expect(res.status).toBe(401);
+    });
+
+    it('should return 403 for EMPLOYEE', async () => {
+      prisma.user.findUnique.mockResolvedValue(employeeUser);
+
+      const res = await request(app)
+        .put('/api/tasks/task-1')
+        .set('Authorization', `Bearer ${employeeToken}`)
+        .send({ title: 'Updated' });
+      expect(res.status).toBe(403);
+    });
+
+    it('should return 404 if task not found', async () => {
+      prisma.user.findUnique.mockResolvedValue(adminUser);
+      prisma.task.findUnique.mockResolvedValue(null);
+
+      const res = await request(app)
+        .put('/api/tasks/nonexistent')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ title: 'Updated', category: 'CLEANING', assignedToId: 'e1b2c3d4-e5f6-7890-abcd-ef1234567890' });
+      expect(res.status).toBe(404);
+    });
+
+    it('should return 200 for ADMIN with valid data', async () => {
+      prisma.user.findUnique.mockResolvedValue(adminUser);
+      prisma.task.findUnique.mockResolvedValue(mockTask);
+      prisma.task.update.mockResolvedValue({ ...mockTask, title: 'Updated' });
+
+      const res = await request(app)
+        .put('/api/tasks/task-1')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ title: 'Updated Task', category: 'CLEANING', assignedToId: 'e1b2c3d4-e5f6-7890-abcd-ef1234567890' });
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe('PATCH /api/tasks/:id/complete - happy path', () => {
+    it('should return 200 when employee toggles own task', async () => {
+      prisma.user.findUnique.mockResolvedValue(employeeUser);
+      prisma.task.findUnique.mockResolvedValue({ ...mockTask, assignedToId: 'employee-1', assignedTo: { id: 'employee-1', name: 'Employee', supervisorId: null } });
+      prisma.task.update.mockResolvedValue({ ...mockTask, isCompleted: true, assignedTo: { id: 'employee-1', name: 'Employee' } });
+      prisma.user.findFirst.mockResolvedValue(null);
+
+      const res = await request(app)
+        .patch('/api/tasks/task-1/complete')
+        .set('Authorization', `Bearer ${employeeToken}`);
+      expect(res.status).toBe(200);
+    });
+
+    it('should return 403 when employee tries to toggle another employees task', async () => {
+      prisma.user.findUnique.mockResolvedValue(employeeUser);
+      prisma.task.findUnique.mockResolvedValue({ ...mockTask, assignedToId: 'other-employee', assignedTo: { id: 'other-employee', name: 'Other', supervisorId: null } });
+
+      const res = await request(app)
+        .patch('/api/tasks/task-1/complete')
+        .set('Authorization', `Bearer ${employeeToken}`);
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe('DELETE /api/tasks/:id - happy path', () => {
+    it('should return 200 for ADMIN', async () => {
+      prisma.user.findUnique.mockResolvedValue(adminUser);
+      prisma.task.findUnique.mockResolvedValue(mockTask);
+      prisma.task.delete.mockResolvedValue(mockTask);
+
+      const res = await request(app)
+        .delete('/api/tasks/task-1')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(res.status).toBe(200);
+    });
+
+    it('should return 403 when supervisor tries to delete task they did not create', async () => {
+      prisma.user.findUnique.mockResolvedValue(supervisorUser);
+      prisma.task.findUnique.mockResolvedValue({ ...mockTask, createdById: 'other-supervisor' });
+
+      const res = await request(app)
+        .delete('/api/tasks/task-1')
+        .set('Authorization', `Bearer ${supervisorToken}`);
+      expect(res.status).toBe(403);
+    });
+
+    it('should return 200 when supervisor deletes their own task', async () => {
+      prisma.user.findUnique.mockResolvedValue(supervisorUser);
+      prisma.task.findUnique.mockResolvedValue({ ...mockTask, createdById: 'supervisor-1' });
+      prisma.task.delete.mockResolvedValue(mockTask);
+
+      const res = await request(app)
+        .delete('/api/tasks/task-1')
+        .set('Authorization', `Bearer ${supervisorToken}`);
+      expect(res.status).toBe(200);
+    });
+  });
+
+});
