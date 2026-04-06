@@ -51,12 +51,12 @@ export default function Navbar() {
             <Link to="/dashboard" className="text-xl font-bold text-brand-600">
               GymTaskManager
             </Link>
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden lg:flex items-center gap-1">
               {filteredLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-brand-600"
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-brand-600 whitespace-nowrap"
                 >
                   {link.label}
                 </Link>
@@ -134,7 +134,7 @@ export default function Navbar() {
             </div>
 
             {/* User info */}
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden lg:flex items-center gap-3">
               <span className="text-sm text-gray-600">
                 {user.name} <span className="text-xs text-gray-400">({user.role})</span>
               </span>
@@ -149,7 +149,7 @@ export default function Navbar() {
             {/* Mobile menu button */}
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="md:hidden p-2 text-gray-500 hover:text-gray-700 rounded-lg"
+              className="lg:hidden p-2 text-gray-500 hover:text-gray-700 rounded-lg"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showMobileMenu ? 'M6 18L18 6M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'} />
@@ -160,7 +160,7 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {showMobileMenu && (
-          <div className="md:hidden pb-4 border-t">
+          <div className="lg:hidden pb-4 border-t">
             {filteredLinks.map((link) => (
               <Link
                 key={link.to}
