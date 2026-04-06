@@ -21,7 +21,7 @@ router.post(
     body('title').trim().notEmpty().withMessage('Title is required.'),
     body('items').isArray({ min: 1 }).withMessage('At least one item is required.'),
     body('items.*.question').trim().notEmpty().withMessage('Question is required.'),
-    body('items.*.type').optional().isIn(['TEXT', 'CHECKBOX', 'NUMBER', 'RATING', 'DATE', 'ATTACHMENT']).withMessage('Invalid item type.'),
+    body('items.*.type').optional().isIn(['TEXT', 'CHECKBOX', 'NUMBER', 'RATING', 'DATE', 'TIME', 'ATTACHMENT']).withMessage('Invalid item type.'),
     body('items.*.isRequired').optional().isBoolean().withMessage('isRequired must be a boolean.'),
   ],
   validate,

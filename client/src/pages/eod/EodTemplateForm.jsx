@@ -9,7 +9,8 @@ const ITEM_TYPES = [
   { value: 'CHECKBOX', label: 'Checkbox (Yes/No)' },
   { value: 'NUMBER', label: 'Number' },
   { value: 'RATING', label: 'Rating (1-5 Stars)' },
-  { value: 'DATE', label: 'Date' },
+  { value: 'DATE', label: 'Date (Calendar)' },
+  { value: 'TIME', label: 'Time' },
   { value: 'ATTACHMENT', label: 'Attachment (File/Link)' },
 ];
 

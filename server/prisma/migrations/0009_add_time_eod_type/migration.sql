@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "EodItemType" ADD VALUE IF NOT EXISTS 'TIME';

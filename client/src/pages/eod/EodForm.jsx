@@ -197,7 +197,7 @@ export default function EodForm() {
                       </svg>
                     ))}
                   </div>
-                ) : r.templateItem?.type === 'DATE' ? (
+                ) : r.templateItem?.type === 'DATE' || r.templateItem?.type === 'TIME' ? (
                   <p className="text-sm text-gray-600">{r.response || '—'}</p>
                 ) : r.templateItem?.type === 'ATTACHMENT' ? (
                   r.response ? (
@@ -262,7 +262,14 @@ export default function EodForm() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Complete Today's EOD</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Complete Today's EOD</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          {' '}at{' '}
+          {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+        </p>
+      </div>
 
       {canSubmitOnBehalf && employees.length > 0 && (
         <div className="mb-4 bg-white rounded-xl border p-4">
@@ -408,6 +415,15 @@ export default function EodForm() {
                 {item.type === 'DATE' && (
                   <input
                     type="date"
+                    value={responses[item.id] || ''}
+                    onChange={(e) => setResponses((r) => ({ ...r, [item.id]: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                  />
+                )}
+
+                {item.type === 'TIME' && (
+                  <input
+                    type="time"
                     value={responses[item.id] || ''}
                     onChange={(e) => setResponses((r) => ({ ...r, [item.id]: e.target.value }))}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"

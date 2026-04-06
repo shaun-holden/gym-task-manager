@@ -101,7 +101,7 @@ export default function EodSubmissionDetail() {
                     ))}
                     <span className="ml-1 text-sm text-gray-500">{r.response}/5</span>
                   </div>
-                ) : r.templateItem?.type === 'DATE' ? (
+                ) : r.templateItem?.type === 'DATE' || r.templateItem?.type === 'TIME' ? (
                   <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-2">{r.response || '—'}</p>
                 ) : r.templateItem?.type === 'ATTACHMENT' ? (
                   r.response ? (

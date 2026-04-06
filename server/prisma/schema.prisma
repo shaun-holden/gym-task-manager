@@ -19,6 +19,7 @@ enum EodItemType {
   NUMBER
   RATING
   DATE
+  TIME
   ATTACHMENT
 }
 
