@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth';
 import Navbar from './components/layout/Navbar';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import InstallPrompt from './components/InstallPrompt';
 
 // Pages
 import Login from './pages/Login';
@@ -121,6 +122,7 @@ export default function App() {
         </Routes>
       </main>
       </ErrorBoundary>
+      <InstallPrompt />
     </BrowserRouter>
   );
 }
