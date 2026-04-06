@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [missingEods, setMissingEods] = useState([]);
   const [showMissingPopup, setShowMissingPopup] = useState(false);
+  const [missingPopupDismissed, setMissingPopupDismissed] = useState(false);
   const [showUrgentModal, setShowUrgentModal] = useState(false);
   const [urgentMessage, setUrgentMessage] = useState('');
   const [urgentTarget, setUrgentTarget] = useState('');
@@ -56,7 +57,7 @@ export default function Dashboard() {
           data.pendingEods = missingRes.data.missing;
 
           setMissingEods(missingRes.data.missing);
-          if (missingRes.data.missing.length > 0) {
+          if (missingRes.data.missing.length > 0 && !missingPopupDismissed) {
             setShowMissingPopup(true);
           }
         }
@@ -301,7 +302,7 @@ export default function Dashboard() {
       {/* Missing EOD Popup for Supervisors/Admins */}
       <Modal
         isOpen={showMissingPopup}
-        onClose={() => setShowMissingPopup(false)}
+        onClose={() => { setShowMissingPopup(false); setMissingPopupDismissed(true); }}
         title="Employees Missing EOD Today"
       >
         <div className="flex items-center gap-3 mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -325,7 +326,7 @@ export default function Dashboard() {
         </div>
         <div className="flex justify-end mt-4">
           <button
-            onClick={() => setShowMissingPopup(false)}
+            onClick={() => { setShowMissingPopup(false); setMissingPopupDismissed(true); }}
             className="px-5 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700"
           >
             Got it
