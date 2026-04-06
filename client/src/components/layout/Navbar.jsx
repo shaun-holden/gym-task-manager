@@ -34,6 +34,7 @@ export default function Navbar() {
     { to: '/tasks', label: 'Tasks', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
     { to: '/eod', label: 'EOD', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
     { to: '/eod/templates', label: 'EOD Templates', roles: ['ADMIN', 'SUPERVISOR'] },
+    { to: '/notifications', label: 'Notifications', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
     { to: '/resources', label: 'Resources', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
     { to: '/team', label: 'Team', roles: ['ADMIN', 'SUPERVISOR'] },
     { to: '/admin/users', label: 'Users', roles: ['ADMIN'] },
