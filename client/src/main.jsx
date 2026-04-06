@@ -6,12 +6,11 @@ import App from './App.jsx';
 import { AuthProvider } from './hooks/useAuth';
 import { SocketProvider } from './hooks/useSocket';
 
-// Register service worker with auto-update
-registerSW({
+// Register service worker — prompt update instead of auto-reload
+const updateSW = registerSW({
   onNeedRefresh() {
-    if (confirm('New version available. Reload to update?')) {
-      window.location.reload();
-    }
+    // Show a non-blocking console message; user can refresh manually
+    console.log('New version available. Refresh to update.');
   },
   onOfflineReady() {
     console.log('App ready to work offline');
