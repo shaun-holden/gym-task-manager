@@ -85,9 +85,12 @@ async function updateTemplate(req, res, next) {
 
     const { title, isActive, items } = req.body;
 
-    // Delete old items and recreate in a transaction
+    // Delete old responses and items, then recreate in a transaction
     const template = await prisma.$transaction(async (tx) => {
       if (items) {
+        await tx.eodResponse.deleteMany({
+          where: { templateItem: { templateId: req.params.id } },
+        });
         await tx.eodTemplateItem.deleteMany({ where: { templateId: req.params.id } });
       }
 
