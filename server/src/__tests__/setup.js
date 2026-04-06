@@ -82,6 +82,14 @@ jest.mock('../utils/prisma', () => {
       delete: jest.fn(),
       deleteMany: jest.fn(),
     },
+    pushSubscription: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      upsert: jest.fn(),
+      delete: jest.fn(),
+      deleteMany: jest.fn(),
+    },
     $transaction: jest.fn(),
     $disconnect: jest.fn(),
   };

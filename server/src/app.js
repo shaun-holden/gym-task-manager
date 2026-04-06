@@ -10,6 +10,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const resourceRoutes = require('./routes/resourceRoutes');
 const organizationRoutes = require('./routes/organizationRoutes');
 const taskCategoryRoutes = require('./routes/taskCategoryRoutes');
+const pushRoutes = require('./routes/pushRoutes');
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/organizations', organizationRoutes);
 app.use('/api/task-categories', taskCategoryRoutes);
+app.use('/api/push', pushRoutes);
 
 // Production: serve React client
 if (process.env.NODE_ENV === 'production') {

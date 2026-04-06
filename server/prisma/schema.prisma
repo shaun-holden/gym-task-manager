@@ -67,9 +67,10 @@ model User {
   eodSubmissions   EodSubmission[] @relation("EodEmployee")
   eodSubmittedFor  EodSubmission[] @relation("EodSubmitter")
   createdTemplates EodTemplate[]
-  notifications    Notification[]
-  resources        Resource[]
-  taskCategories   TaskCategoryCustom[]
+  notifications     Notification[]
+  resources         Resource[]
+  taskCategories    TaskCategoryCustom[]
+  pushSubscriptions PushSubscription[]
 
   @@map("users")
 }
@@ -204,4 +205,17 @@ model Notification {
   user User @relation(fields: [userId], references: [id])
 
   @@map("notifications")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
 }

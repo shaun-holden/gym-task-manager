@@ -18,6 +18,13 @@ registerSW({
   },
 });
 
+// Register push notification service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw-push.js').catch((err) => {
+    console.log('Push SW registration skipped:', err.message);
+  });
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
